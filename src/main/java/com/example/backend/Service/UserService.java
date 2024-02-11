@@ -8,6 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 public class UserService implements IUserService{
@@ -38,7 +39,7 @@ public class UserService implements IUserService{
             user.setImage("C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\avatar\\femme.png");
         } else {
             user.setImage("C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\avatar\\homme.png");
-        }
+        }   
 
         userRepository.save(user);
     }
@@ -48,9 +49,9 @@ public class UserService implements IUserService{
 
     public boolean isValidCredentials(User credentials) {
         // Recherche de l'utilisateur dans la base de données
-        User user = userRepository.findByEmail(credentials.getEmail());
+        Optional<User> userOptional = userRepository.findByEmail(credentials.getEmail());
 
         // Vérification de l'existence de l'utilisateur et du mot de passe correspondant
-        return user != null && passwordEncoder.matches(credentials.getPassword(), user.getPassword());
+        return userOptional.isPresent() && passwordEncoder.matches(credentials.getPassword(), userOptional.get().getPassword());
     }
 }
