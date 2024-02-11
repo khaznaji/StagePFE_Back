@@ -1,5 +1,6 @@
 package com.example.backend.Service;
 
+import com.example.backend.Entity.Gender;
 import com.example.backend.Entity.User;
 import com.example.backend.Repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,26 @@ public class UserService implements IUserService{
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setDate(LocalDateTime.now());
         user.setActivated(false);
+        user.setGender(request.getGender());
+
+        // Définir l'image en fonction du genre
+        if (request.getGender() == Gender.Femme) {
+            user.setImage("C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\avatar\\femme.png");
+        } else {
+            user.setImage("C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\avatar\\homme.png");
+        }
+
         userRepository.save(user);
+    }
+
+
+    @Override
+
+    public boolean isValidCredentials(User credentials) {
+        // Recherche de l'utilisateur dans la base de données
+        User user = userRepository.findByEmail(credentials.getEmail());
+
+        // Vérification de l'existence de l'utilisateur et du mot de passe correspondant
+        return user != null && passwordEncoder.matches(credentials.getPassword(), user.getPassword());
     }
 }

@@ -4,5 +4,7 @@ import com.example.backend.Entity.User;
 
 public interface IUserService {
     void registerUser(User request);
+    public boolean isValidCredentials(User credentials) ;
 
-}
+
+    }

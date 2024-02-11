@@ -25,7 +25,10 @@ public class User {
     private String matricule ;
     @Enumerated(EnumType.STRING)
     private Role role;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
     private String email ;
+    private String image ;
     private String password ;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH-ss-mm")
     private LocalDateTime date = LocalDateTime.now();
