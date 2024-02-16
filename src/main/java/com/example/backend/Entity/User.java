@@ -34,4 +34,6 @@ public class User {
     private LocalDateTime date = LocalDateTime.now();
     @Value("#{false}")
     private boolean isActivated;
+
+
 }

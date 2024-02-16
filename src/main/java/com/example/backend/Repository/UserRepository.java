@@ -8,8 +8,11 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User,Long> {
     Optional<User> findByEmail(String email);
-    @Query(value = "SELECT * FROM user WHERE email = ?1 AND is_activated = 1", nativeQuery = true)
-    Integer findUserByIsActived(String username);
+
     boolean existsByEmail(String email);
+    boolean existsByMatricule(String email);
+
+
+    User findUserByEmail(String email);
 
 }
