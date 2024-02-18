@@ -177,18 +177,21 @@ public class UserController {
     @PostMapping("/request")
     public ResponseEntity<String> requestPasswordReset(@RequestParam("email") String email) {
         Optional<User> userOptional = userService.findByEmail(email);
-        User user = userOptional.get(); // Unwrap the User from Optional
 
-        PasswordResetToken resetToken = passwordResetTokenService.createToken(user);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            PasswordResetToken resetToken = passwordResetTokenService.createToken(user);
+            String resetLink = "http://localhost:4200/reset-password?token=" + resetToken.getToken();
 
-        String resetLink = "http://votre-site/reset-password?token=" + resetToken.getToken();
+            // Envoyer un e-mail contenant le lien de réinitialisation
+            emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
 
-        // Envoyer un e-mail contenant le lien de réinitialisation
-        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
-
-        return ResponseEntity.ok("Un e-mail de réinitialisation a été envoyé à votre adresse e-mail.");
+            return ResponseEntity.ok("Un e-mail de réinitialisation a été envoyé à votre adresse e-mail.");
+        } else {
+            // Email does not exist, return a response indicating so
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Email not found");
+        }
     }
-
 
     @PostMapping("/reset")
     public ResponseEntity<String> resetPassword(@RequestParam("token") String token, @RequestParam("password") String newPassword) {

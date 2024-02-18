@@ -29,9 +29,6 @@ public class PasswordResetToken {
     @Column(nullable = false)
     private Date expiryDate;
 
-    // Getters and setters
-
-    // Constructeur par défaut
     public PasswordResetToken() {}
 
     // Constructeur avec utilisateur et durée d'expiration
