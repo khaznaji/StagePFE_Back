@@ -10,21 +10,20 @@ import com.example.backend.Security.jwt.JwtUtils;
 import com.example.backend.Security.password.PasswordResetToken;
 import com.example.backend.Security.password.PasswordResetTokenService;
 import com.example.backend.Security.services.UserDetailsImpl;
+import com.example.backend.Security.verificationCode.CodeVerification;
+import com.example.backend.Security.verificationCode.CodeVerificationServiceImpl;
 import com.example.backend.Service.UserService;
 import com.example.backend.exception.EmailAlreadyExistsException;
 import com.example.backend.exception.MatriculeAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
@@ -43,11 +42,20 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
-
+    @Autowired
+    private CodeVerificationServiceImpl codeVerificationService;
+    @Autowired
+    private MailConfig emailService;
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerUser(@RequestBody User request) {
         try {
-            userService.registerUser(request);
+            User registeredUser = userService.registerUser(request);
+
+            // Créer et envoyer le code de vérification
+            CodeVerification verificationCode = codeVerificationService.createToken(registeredUser);
+            String resetLink = "http://localhost:4200/activate-account?token=" + verificationCode.getToken();
+            emailService.sendVerificationCodeByEmail(registeredUser.getEmail(), resetLink, verificationCode.getActivationCode());
+
             Map<String, String> responseBody = new HashMap<>();
             responseBody.put("message", "User registered successfully");
             return ResponseEntity.ok(responseBody);
@@ -55,12 +63,13 @@ public class UserController {
             Map<String, String> responseBody = new HashMap<>();
             responseBody.put("error", "Cet e-mail est déjà utilisé. Veuillez choisir un autre e-mail.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
-        }catch (MatriculeAlreadyExistsException e) {
+        } catch (MatriculeAlreadyExistsException e) {
             Map<String, String> responseBody = new HashMap<>();
             responseBody.put("error", "Ce matricule est déjà utilisé. Veuillez choisir un autre matricule.");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
         }
     }
+
     @PostMapping("/registerUserAdmin")
     public ResponseEntity<Map<String, String>> registerUserAdmin(@RequestBody User request) {
         try {
@@ -171,9 +180,6 @@ public class UserController {
     }
     @Autowired
     private PasswordResetTokenService passwordResetTokenService;
-    @Autowired
-    private MailConfig emailService;
-
     @PostMapping("/request")
     public ResponseEntity<String> requestPasswordReset(@RequestParam("email") String email) {
         Optional<User> userOptional = userService.findByEmail(email);
@@ -209,6 +215,28 @@ public class UserController {
         passwordResetTokenService.deleteToken(resetToken);
 
         return ResponseEntity.ok("Mot de passe réinitialisé avec succès.");
+    }
+    @PostMapping("/activate")
+    public ResponseEntity<String> codeActivation(@RequestParam("token") String token, @RequestParam("code") String code) {
+        CodeVerification resetToken = codeVerificationService.findByToken(token);
+
+        if (resetToken == null || resetToken.isExpired()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Jeton invalide ou expiré.");
+        }
+        if (!resetToken.getActivationCode().equals(code)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Code incorrect.");
+        }
+
+        User user = resetToken.getUser();
+        user.setActivated(true);
+
+        // Mettre à jour l'utilisateur dans la base de données
+        userService.save(user);
+
+        // Supprimer le jeton après utilisation
+        codeVerificationService.deleteToken(resetToken);
+
+        return ResponseEntity.ok("Compte activé avec succès.");
     }
 
 }

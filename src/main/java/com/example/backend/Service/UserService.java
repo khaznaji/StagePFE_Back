@@ -5,7 +5,9 @@ import com.example.backend.Entity.Gender;
 import com.example.backend.Entity.User;
 import com.example.backend.Repository.UserRepository;
 import com.example.backend.exception.EmailAlreadyExistsException;
+import com.example.backend.exception.InvalidVerificationCodeException;
 import com.example.backend.exception.MatriculeAlreadyExistsException;
+import com.example.backend.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,7 +28,7 @@ public class UserService implements IUserService{
         this.passwordEncoder = passwordEncoder;
     }
     @Override
-    public void registerUser(User request) {
+    public User registerUser(User request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Cet e-mail est déjà utilisé. Veuillez choisir un autre e-mail.");
         }
@@ -53,8 +55,9 @@ public class UserService implements IUserService{
             user.setImage("avatar/homme.png");
         }
 
-        userRepository.save(user);
-    }
+        User registeredUser = userRepository.save(user);
+        // Return the registered user
+        return registeredUser;    }
     @Override
     public void registerUserAdmin(User request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -187,4 +190,5 @@ public class UserService implements IUserService{
     public String encodePassword(String plainPassword) {
         return passwordEncoder.encode(plainPassword);
     }
+
 }

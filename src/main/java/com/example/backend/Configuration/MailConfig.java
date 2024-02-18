@@ -1,5 +1,6 @@
 package com.example.backend.Configuration;
 
+import com.example.backend.Entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,6 +39,13 @@ public class MailConfig {
 
         javaMailSender.send(message);
     }
+    public void sendVerificationCodeByEmail(String email,String resetLink, String verificationCode) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(email);
+        message.setSubject("Code de vérification d'inscription");
+        message.setText("Click the link to active your account : " + resetLink + "Votre code de vérification est : " + verificationCode);
 
+        javaMailSender.send(message);
+    }
 }
 
