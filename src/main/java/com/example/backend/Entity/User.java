@@ -6,16 +6,19 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.lang.Nullable;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Entity
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
-public class User {
+@NoArgsConstructor
+@AllArgsConstructor
+public  class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id ;
@@ -34,6 +37,7 @@ public class User {
     private LocalDateTime date = LocalDateTime.now();
     @Value("#{false}")
     private boolean isActivated;
+
 
 
 }

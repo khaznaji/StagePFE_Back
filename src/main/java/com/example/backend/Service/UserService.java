@@ -2,6 +2,7 @@ package com.example.backend.Service;
 
 import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.Gender;
+import com.example.backend.Entity.Role;
 import com.example.backend.Entity.User;
 import com.example.backend.Repository.UserRepository;
 import com.example.backend.exception.EmailAlreadyExistsException;
@@ -9,6 +10,8 @@ import com.example.backend.exception.InvalidVerificationCodeException;
 import com.example.backend.exception.MatriculeAlreadyExistsException;
 import com.example.backend.exception.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,37 +32,40 @@ public class UserService implements IUserService{
     }
     @Override
     public User registerUser(User request) {
+        // Vérifie si l'e-mail est déjà utilisé
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Cet e-mail est déjà utilisé. Veuillez choisir un autre e-mail.");
         }
 
+        // Vérifie si le matricule est déjà utilisé
         if (userRepository.existsByMatricule(request.getMatricule())) {
             throw new MatriculeAlreadyExistsException();
         }
+
+        // Crée un nouvel utilisateur
         User user = new User();
         user.setNom(request.getNom());
         user.setPrenom(request.getPrenom());
         user.setNumtel(request.getNumtel());
         user.setMatricule(request.getMatricule());
-        user.setRole(request.getRole());
+        user.setRole(Role.ManagerRh);
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setDate(LocalDateTime.now());
         user.setActivated(false);
         user.setGender(request.getGender());
+        // Ajoute des informations supplémentaires
+        user.setImage(request.getGender() == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
 
-        if (request.getGender() == Gender.Femme) {
-            user.setImage("avatar/femme.png");
 
-        } else {
-            user.setImage("avatar/homme.png");
-        }
-
+        // Enregistre l'utilisateur dans la base de données
         User registeredUser = userRepository.save(user);
-        // Return the registered user
-        return registeredUser;    }
+
+        // Retourne l'utilisateur enregistré
+        return registeredUser;
+    }
     @Override
-    public void registerUserAdmin(User request) {
+    public User registerCollaborateur(User request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException();
         }
@@ -72,7 +78,7 @@ public class UserService implements IUserService{
         user.setPrenom(request.getPrenom());
         user.setNumtel(request.getNumtel());
         user.setMatricule(request.getMatricule());
-        user.setRole(request.getRole());
+        user.setRole(Role.ManagerService);
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode("SopraHR2024"));
         user.setDate(LocalDateTime.now());
@@ -88,23 +94,46 @@ public class UserService implements IUserService{
 
         userRepository.save(user);
 
-        // Envoyer un e-mail au nouvel utilisateur
-        String subject = "Bienvenue sur 4YOU";
-        String body = "Chère/Cher " + user.getNom() +",\n\n" +
-                "Nous sommes ravis de vous informer que votre compte 4YOU a été créé avec succès!\n\n" +
-                "Email: " + user.getEmail() + "\n" +
-                "Mot de passe: SopraHR2024\n\n" +
-                "Vous pouvez vous connecter à votre compte en utilisant ce lien: http://localhost:4200/signin\n\n" +
-                "Nous vous recommandons de changer votre mot de passe dès que possible pour des raisons de sécurité.\n\n" +
-                "Merci de faire partie de la communauté 4YOU.\n\n" +
-                "Cordialement,\n" +
-                "L'équipe 4YOU";
+        User registeredUser = userRepository.save(user);
 
-
-        emailService.sendActivationEmail(user.getEmail(), subject, body);
+        // Retourne l'utilisateur enregistré
+        return registeredUser;
     }
 
+    @Override
+    public User registerManagerService(User request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new EmailAlreadyExistsException();
+        }
 
+        if (userRepository.existsByMatricule(request.getMatricule())) {
+            throw new MatriculeAlreadyExistsException();
+        }
+        User user = new User();
+        user.setNom(request.getNom());
+        user.setPrenom(request.getPrenom());
+        user.setNumtel(request.getNumtel());
+        user.setMatricule(request.getMatricule());
+        user.setRole(Role.Collaborateur);
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode("SopraHR2024"));
+        user.setDate(LocalDateTime.now());
+        user.setActivated(true);
+        user.setGender(request.getGender());
+
+        // Définir l'image en fonction du genre
+        if (request.getGender() == Gender.Femme) {
+            user.setImage("avatar/femme.png");
+        } else {
+            user.setImage("avatar/homme.png");
+        }
+
+        User registeredUser = userRepository.save(user);
+        return registeredUser;
+
+        // Envoyer un e-mail au nouvel utilisateur
+
+    }
     @Override
 
     public boolean isValidCredentials(User credentials) {
@@ -190,5 +219,6 @@ public class UserService implements IUserService{
     public String encodePassword(String plainPassword) {
         return passwordEncoder.encode(plainPassword);
     }
+
 
 }

@@ -9,6 +9,6 @@ public interface IUserService {
     public boolean isValidCredentials(User credentials) ;
     public List<User> getAllUsers();
     public void updateStatus(Long id, boolean newValue);
-    public void registerUserAdmin(User request);
-
+    public User registerCollaborateur(User request);
+    public User registerManagerService(User request);
 }

@@ -8,6 +8,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 
 public enum Role {
-Admin , Collaborateur , ManagerRh
+ManagerService , Collaborateur , ManagerRh
 
 }
