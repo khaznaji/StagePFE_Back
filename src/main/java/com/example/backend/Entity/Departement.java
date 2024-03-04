@@ -9,16 +9,9 @@ import javax.persistence.GenerationType;
 import javax.persistence.*;
 import java.util.List;
 
-@Entity
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class Departement {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    private String nom;
 
+public enum Departement {
+        Ressources_Humaines , Financier,  Informatique, Marketing , Production  ,
+    Recherche_et_du_Développement ,Juridique , Opérations
 
 }
