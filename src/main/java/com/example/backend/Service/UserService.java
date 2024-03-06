@@ -2,8 +2,10 @@ package com.example.backend.Service;
 
 import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.Gender;
+import com.example.backend.Entity.ManagerService;
 import com.example.backend.Entity.Role;
 import com.example.backend.Entity.User;
+import com.example.backend.Repository.ManagerServiceRepository;
 import com.example.backend.Repository.UserRepository;
 import com.example.backend.exception.EmailAlreadyExistsException;
 import com.example.backend.exception.InvalidVerificationCodeException;
@@ -23,6 +25,9 @@ import java.util.UUID;
 @Service
 public class UserService implements IUserService{
     private final UserRepository userRepository;
+    @Autowired
+    private  ManagerServiceRepository managerServiceRepository;
+
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -55,7 +60,6 @@ public class UserService implements IUserService{
         user.setActivated(false);
         user.setGender(request.getGender());
         // Ajoute des informations supplémentaires
-        user.setImage(request.getGender() == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
 
 
         // Enregistre l'utilisateur dans la base de données
@@ -85,12 +89,6 @@ public class UserService implements IUserService{
         user.setActivated(true);
         user.setGender(request.getGender());
 
-        // Définir l'image en fonction du genre
-        if (request.getGender() == Gender.Femme) {
-            user.setImage("avatar/femme.png");
-        } else {
-            user.setImage("avatar/homme.png");
-        }
 
         userRepository.save(user);
 
@@ -121,12 +119,6 @@ public class UserService implements IUserService{
         user.setActivated(true);
         user.setGender(request.getGender());
 
-        // Définir l'image en fonction du genre
-        if (request.getGender() == Gender.Femme) {
-            user.setImage("avatar/femme.png");
-        } else {
-            user.setImage("avatar/homme.png");
-        }
 
         User registeredUser = userRepository.save(user);
         return registeredUser;
@@ -134,6 +126,46 @@ public class UserService implements IUserService{
         // Envoyer un e-mail au nouvel utilisateur
 
     }
+    public ManagerService registerManagerService(ManagerService request) {
+        if (userRepository.existsByEmail(request.getManager().getEmail())) {
+            throw new EmailAlreadyExistsException();
+        }
+
+        if (userRepository.existsByMatricule(request.getManager().getMatricule())) {
+            throw new MatriculeAlreadyExistsException();
+        }
+
+        // Créer un nouvel utilisateur pour le manager
+        User manager = new User();
+        manager.setNom(request.getManager().getNom());
+        manager.setPrenom(request.getManager().getPrenom());
+        manager.setNumtel(request.getManager().getNumtel());
+        manager.setMatricule(request.getManager().getMatricule());
+        manager.setRole(Role.ManagerRh);
+        manager.setEmail(request.getManager().getEmail());
+        manager.setPassword(passwordEncoder.encode("SopraHR2024"));
+        manager.setDate(LocalDateTime.now());
+        manager.setActivated(true);
+        manager.setGender(request.getManager().getGender());
+
+
+
+        // Enregistrer le manager dans la base de données
+        User registeredManager = userRepository.save(manager);
+
+        // Créer un nouveau ManagerService avec les informations du manager et les informations spécifiques au ManagerService
+        ManagerService managerService = new ManagerService();
+        managerService.setManager(registeredManager);
+        managerService.setDepartment(request.getDepartment());
+        managerService.setPoste(request.getPoste());
+        managerService.setBio(request.getBio());
+        managerService.setDateEntree(request.getDateEntree());
+        managerService.setCompetences(request.getCompetences());
+
+        // Enregistrer le ManagerService dans la base de données
+        return managerServiceRepository.save(managerService);
+    }
+
     @Override
 
     public boolean isValidCredentials(User credentials) {
@@ -160,6 +192,10 @@ public class UserService implements IUserService{
             userRepository.save(myObject);
         }
 
+    }
+    @Override
+    public List<User> getUsersByRole(Role role) {
+        return userRepository.findByRole(role);
     }
 
     @Autowired

@@ -1,6 +1,7 @@
 package com.example.backend.Service;
 
 import com.example.backend.Entity.Competence;
+import com.example.backend.Entity.Domaine;
 import com.example.backend.Repository.CompetenceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,4 +51,9 @@ public class CompetenceService implements ICompetenceService {
     @Override
     public void deleteCompetence(Long id) {
         competenceRepository.deleteById(id);
+    }
+    @Override
+
+    public List<Competence> getCompetencesByDomain(Domaine domaine) {
+        return competenceRepository.findByDomaine(domaine);
     }}

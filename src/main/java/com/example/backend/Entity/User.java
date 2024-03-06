@@ -31,7 +31,6 @@ public  class User {
     @Enumerated(EnumType.STRING)
     private Gender gender;
     private String email ;
-    private String image ;
     private String password ;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH-ss-mm")
     private LocalDateTime date = LocalDateTime.now();

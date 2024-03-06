@@ -1,11 +1,13 @@
 package com.example.backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -21,5 +23,13 @@ public class Competence {
     private String nom;
     @Enumerated(EnumType.STRING)
     private Domaine domaine;
+
+    @ManyToMany(mappedBy = "competences")
+    @JsonIgnore
+    private List<ManagerService> managers ;
+
+    @ManyToMany(mappedBy = "competences")
+    @JsonIgnore
+    private List<Collaborateur> collaborateurs ;
 
 }

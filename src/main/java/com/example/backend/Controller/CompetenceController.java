@@ -1,6 +1,7 @@
 package com.example.backend.Controller;
 
 import com.example.backend.Entity.Competence;
+import com.example.backend.Entity.Domaine;
 import com.example.backend.Service.ICompetenceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -50,5 +51,9 @@ public class CompetenceController {
     public ResponseEntity<Void> deleteCompetence(@PathVariable Long id) {
         competenceService.deleteCompetence(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+    @GetMapping("/byDomain/{domaine}")
+    public List<Competence> getCompetencesByDomain(@PathVariable Domaine domaine) {
+        return competenceService.getCompetencesByDomain(domaine);
     }
 }
