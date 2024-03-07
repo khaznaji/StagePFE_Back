@@ -27,10 +27,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 @Controller
 @RestController
 @CrossOrigin(origins = "*")
@@ -226,6 +224,57 @@ public class UserController {
     @GetMapping("/finduserbyid/{id}")
     public User getUserByid(@PathVariable Long id) {
         return userService.getUserById(id);
+    }
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserDetails(@PathVariable Long id) {
+        User user = userService.findById(id);
+
+        if (user != null) {
+            Map<String, Object> userDetails = new HashMap<>();
+            userDetails.put("id", user.getId());
+            userDetails.put("nom", user.getNom());
+            userDetails.put("prenom", user.getPrenom());
+            userDetails.put("email", user.getEmail());
+            userDetails.put("password", user.getPassword());
+            userDetails.put("matricule", user.getMatricule());
+            userDetails.put("date", user.getDate());
+            userDetails.put("numtel", user.getNumtel());
+            userDetails.put("role", user.getRole());
+            userDetails.put("gender", user.getGender());
+            userDetails.put("isActivated", user.isActivated());
+
+            // Ajoutez d'autres propriétés selon vos besoins
+
+            if (user.getRole() == Role.ManagerService) {
+                ManagerService managerService = user.getManagerService();
+                userDetails.put("managerService", managerService);
+                userDetails.put("competences", managerService.getCompetences());
+                List<User> users = userService.getUsersByManagerService(managerService);
+
+                // Extract names and surnames and add them to the response
+                List<Map<String, String>> userNames = new ArrayList<>();
+                for (User u : users) {
+                    Map<String, String> userNameMap = new HashMap<>();
+                    userNameMap.put("nom", u.getNom());
+                    userNameMap.put("prenom", u.getPrenom());
+                    userNames.add(userNameMap);
+                }
+                userDetails.put("users", userNames);
+
+            } else if (user.getRole() == Role.Collaborateur) {
+                Collaborateur collaborateur = user.getCollaborateur();
+                userDetails.put("collaborateur", collaborateur);
+                userDetails.put("competences", collaborateur.getCompetences());
+                userDetails.put("ManagerServices", collaborateur.getManagerService());
+                userDetails.put("Nom ManagerServices", collaborateur.getManagerService().getManager().getNom());
+                userDetails.put("Prenom ManagerServices", collaborateur.getManagerService().getManager().getPrenom());
+
+            }
+
+            return ResponseEntity.ok(userDetails);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 
 

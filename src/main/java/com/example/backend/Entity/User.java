@@ -1,5 +1,7 @@
 package com.example.backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,6 +38,12 @@ public  class User {
     private LocalDateTime date = LocalDateTime.now();
     @Value("#{false}")
     private boolean isActivated;
+    @OneToOne(mappedBy = "collaborateur")
+    @JsonIgnore
+    private Collaborateur collaborateur;
+    @OneToOne(mappedBy = "manager")
+    @JsonIgnore
+    private ManagerService managerService;
 
 
 

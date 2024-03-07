@@ -1,6 +1,7 @@
 package com.example.backend.Entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,10 +27,14 @@ public class Competence {
 
     @ManyToMany(mappedBy = "competences")
     @JsonIgnore
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+
     private List<ManagerService> managers ;
 
     @ManyToMany(mappedBy = "competences")
     @JsonIgnore
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+
     private List<Collaborateur> collaborateurs ;
 
 }

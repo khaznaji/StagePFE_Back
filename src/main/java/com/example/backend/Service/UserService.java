@@ -35,6 +35,12 @@ public class UserService implements IUserService{
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+    public User findById(Long id) {
+        return userRepository.findById(id).orElse(null);
+    }
+    public List<User> getUsersByManagerService(ManagerService managerService) {
+        return userRepository.findByManagerService(managerService);
+    }
     @Override
     public User registerUser(User request) {
         // Vérifie si l'e-mail est déjà utilisé
