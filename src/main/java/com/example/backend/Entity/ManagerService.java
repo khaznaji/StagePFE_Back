@@ -23,7 +23,6 @@
         @OneToOne()
         @JoinColumn(name = "manager_id")
         @JsonIgnore
-
         private User manager;
         @Enumerated(EnumType.STRING)
         private Departement department;
@@ -31,7 +30,6 @@
         private String bio ;
         @DateTimeFormat(pattern = "dd/MM/yyyy")
         private LocalDate dateEntree;
-        private String image ;
 
         @ManyToMany
         @JoinTable(

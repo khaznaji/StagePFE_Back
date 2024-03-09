@@ -7,6 +7,7 @@ import com.example.backend.Entity.Role;
 import com.example.backend.Entity.User;
 import com.example.backend.Repository.ManagerServiceRepository;
 import com.example.backend.Repository.UserRepository;
+import com.example.backend.Security.verificationCode.CodeVerificationRepository;
 import com.example.backend.exception.EmailAlreadyExistsException;
 import com.example.backend.exception.InvalidVerificationCodeException;
 import com.example.backend.exception.MatriculeAlreadyExistsException;
@@ -17,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +40,18 @@ public class UserService implements IUserService{
     public User findById(Long id) {
         return userRepository.findById(id).orElse(null);
     }
+    @Autowired
+    private CodeVerificationRepository codeVerificationRepository;
+    @Transactional
+    public void deleteUser(Long userId) {
+        // Delete CodeVerification records first
+        codeVerificationRepository.deleteByUserId(userId);
+
+        // Then delete the user
+        userRepository.deleteById(userId);
+    }
+
+
     public List<User> getUsersByManagerService(ManagerService managerService) {
         return userRepository.findByManagerService(managerService);
     }
@@ -65,10 +79,8 @@ public class UserService implements IUserService{
         user.setDate(LocalDateTime.now());
         user.setActivated(false);
         user.setGender(request.getGender());
-        // Ajoute des informations supplémentaires
+        user.setImage(request.getGender() == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
 
-
-        // Enregistre l'utilisateur dans la base de données
         User registeredUser = userRepository.save(user);
 
         // Retourne l'utilisateur enregistré

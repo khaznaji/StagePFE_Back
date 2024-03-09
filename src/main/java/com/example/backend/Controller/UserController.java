@@ -78,11 +78,11 @@ public class UserController {
             manager.setDate(LocalDateTime.now());
             manager.setActivated(false);
             manager.setGender(gender);
+            manager.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
 
             User registeredManager = userRepository.save(manager);
 
             ManagerService request = new ManagerService();
-            request.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
 
             request.setManager(registeredManager);
             request.setDepartment(department);
@@ -130,10 +130,11 @@ public class UserController {
             manager.setDate(LocalDateTime.now());
             manager.setActivated(false);
             manager.setGender(gender);
+            manager.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
+
             User registeredManager = userRepository.save(manager);
             Collaborateur request = new Collaborateur();
             request.setCollaborateur(registeredManager);
-            request.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
             request.setManagerService(managerService); // Associer le collaborateur avec le ManagerService
             request.setDepartment(managerService.getDepartment());
             request.setPoste(poste);
@@ -187,7 +188,11 @@ public class UserController {
 
         return ResponseEntity.ok(managerServices);
     }
-    @GetMapping("/collaborateur")
+    @DeleteMapping("/deleteAccount/{id}")
+    @ResponseBody
+    public void deleteAccount(@PathVariable("id")Long id){
+        userService.deleteUser(id);
+    }    @GetMapping("/collaborateur")
     public ResponseEntity<List<User>> getCollaborateur() {
         List<User> managerServices = userService.getUsersByRole(Role.Collaborateur);
 
@@ -220,7 +225,43 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erreur lors de l'envoi de l'e-mail");
         }
     }
+    @PutMapping("/updatePassword")
+    public ResponseEntity<Map<String, String>>  updatePassword(
+            @RequestParam("oldPassword") String oldPassword,
+            @RequestParam("newPassword") String newPassword
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
 
+        User user = userDetails.getUser();
+        Map<String, String> response = new HashMap<>();
+
+        // Vérifier si l'ancien mot de passe fourni correspond au mot de passe actuel
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            response.put("error", "L'ancien mot de passe est incorrect");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response); }
+
+        // Mettre à jour le mot de passe
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        response.put("success", "Mot de passe mis à jour avec succès");
+        return ResponseEntity.ok(response);    }
+    @GetMapping("/me")
+    public ResponseEntity<User> getCurrentUserDetails() {
+        User currentUser;
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.getPrincipal() instanceof UserDetailsImpl) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            currentUser = userDetails.getUser();
+        } else {
+            // Utiliser un utilisateur par défaut avec un nom d'utilisateur spécifique
+            currentUser = userRepository.findUserByEmail("coach1@gmail.com"); // Remplacez "user1@gmail.com" par le nom d'utilisateur spécifique
+        }
+
+        return ResponseEntity.ok(currentUser);
+    }
     @GetMapping("/finduserbyid/{id}")
     public User getUserByid(@PathVariable Long id) {
         return userService.getUserById(id);
@@ -242,6 +283,7 @@ public class UserController {
             userDetails.put("role", user.getRole());
             userDetails.put("gender", user.getGender());
             userDetails.put("isActivated", user.isActivated());
+            userDetails.put("image", user.getImage());
 
             // Ajoutez d'autres propriétés selon vos besoins
 
@@ -252,14 +294,31 @@ public class UserController {
                 List<User> users = userService.getUsersByManagerService(managerService);
 
                 // Extract names and surnames and add them to the response
-                List<Map<String, String>> userNames = new ArrayList<>();
+                List<Map<String, Object>> userNames = new ArrayList<>();
+
                 for (User u : users) {
-                    Map<String, String> userNameMap = new HashMap<>();
+                    Map<String, Object> userNameMap = new HashMap<>();
+                    userNameMap.put("id", u.getId());
                     userNameMap.put("nom", u.getNom());
                     userNameMap.put("prenom", u.getPrenom());
+
                     userNames.add(userNameMap);
                 }
+
                 userDetails.put("users", userNames);
+                // Ajoutez également la liste des collaborateurs associés au ManagerService
+                List<Map<String, Object>> collaborateurs = new ArrayList<>();
+
+                for (Collaborateur collaborateur : managerService.getCollaborateurs()) {
+                    Map<String, Object> collaborateurMap = new HashMap<>();
+                    collaborateurMap.put("id", collaborateur.getCollaborateur().getId());
+                    collaborateurMap.put("nom", collaborateur.getCollaborateur().getNom());
+                    collaborateurMap.put("prenom", collaborateur.getCollaborateur().getPrenom());
+                    collaborateurs.add(collaborateurMap);
+
+                }
+
+                userDetails.put("collaborateurs", collaborateurs);
 
             } else if (user.getRole() == Role.Collaborateur) {
                 Collaborateur collaborateur = user.getCollaborateur();

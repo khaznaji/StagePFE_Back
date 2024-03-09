@@ -46,6 +46,5 @@ public class Collaborateur {
     )
     @JsonIgnore
     private List<Competence> competences;
-    private String image ;
 
 }

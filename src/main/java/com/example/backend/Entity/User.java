@@ -38,12 +38,13 @@ public  class User {
     private LocalDateTime date = LocalDateTime.now();
     @Value("#{false}")
     private boolean isActivated;
-    @OneToOne(mappedBy = "collaborateur")
+    @OneToOne(mappedBy = "collaborateur", cascade = CascadeType.ALL)
     @JsonIgnore
     private Collaborateur collaborateur;
-    @OneToOne(mappedBy = "manager")
+    @OneToOne(mappedBy = "manager" , cascade = CascadeType.ALL)
     @JsonIgnore
     private ManagerService managerService;
+    private String image ;
 
 
 
