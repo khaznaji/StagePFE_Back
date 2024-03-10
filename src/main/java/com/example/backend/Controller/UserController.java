@@ -11,6 +11,7 @@ import com.example.backend.Security.verificationCode.CodeVerificationServiceImpl
 import com.example.backend.Service.ManagerServiceService;
 import com.example.backend.Service.UserService;
 import com.example.backend.exception.EmailAlreadyExistsException;
+import com.example.backend.exception.ManagerServiceNotFoundException;
 import com.example.backend.exception.MatriculeAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -113,7 +115,7 @@ public class UserController {
             @RequestParam("gender") Gender gender,
             @RequestParam(value = "image", required = false) MultipartFile image,
             @RequestParam("poste") String poste,
-            @RequestParam("managerService") ManagerService managerService,
+            @RequestParam("managerServiceId") Long managerServiceId,
             @RequestParam(value = "bio", required = false) String bio,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree,
             @RequestParam("competences") List<Competence> competences
@@ -131,12 +133,14 @@ public class UserController {
             manager.setActivated(false);
             manager.setGender(gender);
             manager.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
+            User manager1 = userRepository.findByRoleAndId(Role.ManagerService, managerServiceId)
+                    .orElseThrow(() -> new ManagerServiceNotFoundException("Manager not found with id: " + managerServiceId));
 
             User registeredManager = userRepository.save(manager);
             Collaborateur request = new Collaborateur();
             request.setCollaborateur(registeredManager);
-            request.setManagerService(managerService); // Associer le collaborateur avec le ManagerService
-            request.setDepartment(managerService.getDepartment());
+            request.setManagerService(manager1.getManagerService());
+            request.setDepartment(manager1.getDepartment());
             request.setPoste(poste);
             request.setBio(bio);
             request.setDateEntree(dateEntree);
@@ -192,7 +196,8 @@ public class UserController {
     @ResponseBody
     public void deleteAccount(@PathVariable("id")Long id){
         userService.deleteUser(id);
-    }    @GetMapping("/collaborateur")
+    }
+    @GetMapping("/collaborateur")
     public ResponseEntity<List<User>> getCollaborateur() {
         List<User> managerServices = userService.getUsersByRole(Role.Collaborateur);
 
@@ -247,6 +252,94 @@ public class UserController {
 
         response.put("success", "Mot de passe mis à jour avec succès");
         return ResponseEntity.ok(response);    }
+    // Add this method to your UserController
+    @PutMapping("/updateProfile")
+    public ResponseEntity<Map<String, String>> updateProfile(
+            @RequestParam(value = "newEmail", required = false) String newEmail,
+            @RequestParam(value = "newNumtel", required = false) Integer newNumtel,
+            @RequestParam(value = "image", required = false) MultipartFile image
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        User user = userDetails.getUser();
+
+        Map<String, String> response = new HashMap<>();
+
+        // Check if at least one of the parameters is provided
+        if (newEmail == null && newNumtel == null && image == null) {
+            response.put("error", "Provide at least one parameter (newEmail, newNumtel, or image)");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        // Check if the new email is not already taken
+        if (newEmail != null && userRepository.existsByEmailAndIdNot(newEmail, user.getId())) {
+            response.put("error", "Email already in use");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        // Update the email if provided
+        if (newEmail != null) {
+            user.setEmail(newEmail);
+        }
+
+        // Update the numtel if provided
+        if (newNumtel != null) {
+            user.setNumtel(newNumtel);
+        }
+
+        // Handle image upload
+        if (image != null && !image.isEmpty()) {
+            try {
+                // Generate a timestamp for the image file name
+                String timestamp = String.valueOf(System.currentTimeMillis());
+
+                // Determine the subfolder path based on the user's role
+                String subfolderPath;
+                switch (user.getRole()) {
+                    case ManagerRh:
+                        subfolderPath = "ManagerRh";
+                        break;
+                    case ManagerService:
+                        subfolderPath = "ManagerService";
+                        break;
+                    case Collaborateur:
+                        subfolderPath = "Collaborateur";
+                        break;
+                    default:
+                        // Handle other roles if needed
+                        response.put("error", "Invalid user role");
+                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+                }
+
+                // Determine the folder path
+                String folderPath = "C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\images\\" + subfolderPath;
+
+                // Create the folder if it doesn't exist
+                File folder = new File(folderPath);
+                if (!folder.exists()) {
+                    folder.mkdirs();
+                }
+
+                // Save the image to the subfolder with the timestamp as part of the file name
+                String fileName = timestamp + "_" + image.getOriginalFilename();
+                File filePath = new File(folder, fileName);
+                image.transferTo(filePath);
+
+                // Update the user's image file name in the database
+                user.setImage(subfolderPath + "/" + fileName);
+            } catch (IOException e) {
+                response.put("error", "Error saving the image");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
+
+        // Save the changes
+        userRepository.save(user);
+
+        response.put("success", "Profile updated successfully");
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<User> getCurrentUserDetails() {
         User currentUser;

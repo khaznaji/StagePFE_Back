@@ -45,7 +45,14 @@ public  class User {
     @JsonIgnore
     private ManagerService managerService;
     private String image ;
-
+    public Departement getDepartment() {
+        // Ajoutez ici la logique pour récupérer le département de l'utilisateur.
+        // Vous devrez peut-être ajuster cela en fonction de votre modèle de données.
+        if (managerService != null) {
+            return managerService.getDepartment();
+        }
+        return null; // ou lancez une exception, selon vos besoins.
+    }
 
 
 }

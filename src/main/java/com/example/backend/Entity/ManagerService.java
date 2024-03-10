@@ -42,6 +42,5 @@
 
         @OneToMany(mappedBy = "managerService")
         @JsonIgnore
-
         private List<Collaborateur> collaborateurs;
     }
