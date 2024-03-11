@@ -214,6 +214,25 @@ public class AuthController {
         responseBody.put("message", "Compte activé avec succès.");
         return ResponseEntity.ok(responseBody);
     }
+    @PostMapping("/regenerate")
+    public ResponseEntity<Map<String, String>>  regenerateToken(@RequestParam("token") String token) {
+        CodeVerification regeneratedToken = codeVerificationService.regenerateToken(token);
+        String resetLink = "http://localhost:4200/activate-account?token=" + regeneratedToken.getToken();
+        String email = regeneratedToken.getUser().getEmail(); // Adjust this according to your User class
+        String verificationCode = regeneratedToken.getActivationCode();
+        emailService.sendVerificationCodeByEmail(email, resetLink, verificationCode);
 
+        if (regeneratedToken != null) {
+            Map<String, String> response = new HashMap<>();
+
+            response.put("success", "Code envoye avec succes");
+            return ResponseEntity.ok(response);
+        } else {
+            Map<String, String> response = new HashMap<>();
+            response.put("success", "Token Invalid");
+            return ResponseEntity.ok(response);
+
+        }
+    }
 
 }

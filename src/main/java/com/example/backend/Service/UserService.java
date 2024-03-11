@@ -273,6 +273,12 @@ public class UserService implements IUserService{
     public String encodePassword(String plainPassword) {
         return passwordEncoder.encode(plainPassword);
     }
+    public long countCollaborateurs() {
+        return userRepository.countByRole(Role.Collaborateur);
+    }
 
+    public long countManagerServices() {
+        return userRepository.countByRole(Role.ManagerService);
+    }
 
 }
