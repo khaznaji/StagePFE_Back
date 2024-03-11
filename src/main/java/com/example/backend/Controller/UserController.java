@@ -105,6 +105,29 @@ public class UserController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @PostMapping("/regenerate")
+    public ResponseEntity<Map<String, String>>  regenerateToken(@RequestParam("token") String token) {
+        CodeVerification regeneratedToken = codeVerificationService.regenerateToken(token);
+        String resetLink = "http://localhost:4200/activate-account?token=" + regeneratedToken.getToken();
+        String email = regeneratedToken.getUser().getEmail(); // Adjust this according to your User class
+        String verificationCode = regeneratedToken.getActivationCode();
+emailService.sendVerificationCodeByEmail(email, resetLink, verificationCode);
+
+        if (regeneratedToken != null) {
+            Map<String, String> response = new HashMap<>();
+
+            response.put("success", "Code envoye avec succes");
+            return ResponseEntity.ok(response);
+        } else {
+            Map<String, String> response = new HashMap<>();
+            response.put("success", "Token Invalid");
+            return ResponseEntity.ok(response);
+
+        }
+    }
+
+
     @PostMapping("/registerCollaborateur")
     public ResponseEntity<?> registerCollaborateur(
             @RequestParam("nom") String nom,
@@ -255,8 +278,8 @@ public class UserController {
     // Add this method to your UserController
     @PutMapping("/updateProfile")
     public ResponseEntity<Map<String, String>> updateProfile(
-            @RequestParam(value = "newEmail", required = false) String newEmail,
-            @RequestParam(value = "newNumtel", required = false) Integer newNumtel,
+            @RequestParam(value = "email", required = false) String email,
+            @RequestParam(value = "numtel", required = false) Integer numtel,
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -266,27 +289,26 @@ public class UserController {
         Map<String, String> response = new HashMap<>();
 
         // Check if at least one of the parameters is provided
-        if (newEmail == null && newNumtel == null && image == null) {
+        // Check if at least one of the parameters is provided
+        if (email == null && numtel == null && image == null) {
             response.put("error", "Provide at least one parameter (newEmail, newNumtel, or image)");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
-
         // Check if the new email is not already taken
-        if (newEmail != null && userRepository.existsByEmailAndIdNot(newEmail, user.getId())) {
+        if (email != null && userRepository.existsByEmailAndIdNot(email, user.getId())) {
             response.put("error", "Email already in use");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
         // Update the email if provided
-        if (newEmail != null) {
-            user.setEmail(newEmail);
+        if (email != null) {
+            user.setEmail(email);
         }
 
         // Update the numtel if provided
-        if (newNumtel != null) {
-            user.setNumtel(newNumtel);
+        if (numtel != null) {
+            user.setNumtel(numtel);
         }
-
         // Handle image upload
         if (image != null && !image.isEmpty()) {
             try {

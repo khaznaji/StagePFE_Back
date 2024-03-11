@@ -1,6 +1,7 @@
 package com.example.backend.Security.verificationCode;
 import com.example.backend.Entity.User;
 import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -9,6 +10,7 @@ import java.util.Date;
 
 @Entity
 @Getter
+@Setter
 public class CodeVerification {
 
     @Id
@@ -37,7 +39,7 @@ public class CodeVerification {
 
     }
 
-    private Date calculateExpiryDate(int expirationInMinutes) {
+     Date calculateExpiryDate(int expirationInMinutes) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(new Timestamp(cal.getTime().getTime()));
         cal.add(Calendar.MINUTE, expirationInMinutes);
@@ -47,4 +49,5 @@ public class CodeVerification {
     public boolean isExpired() {
         return new Date().after(this.expiryDate);
     }
+
 }
