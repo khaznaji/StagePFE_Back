@@ -1,5 +1,6 @@
 package com.example.backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +10,9 @@ import org.springframework.beans.factory.annotation.Value;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -39,6 +42,15 @@ public class Poste {
     private String description;
     private int nombrePostesDisponibles;
     private LocalDate dateCreation;
+    @ManyToMany
+    @JoinTable(
+            name = "poste_candidat", // Nom de la table d'association
+            joinColumns = @JoinColumn(name = "poste_id"),
+            inverseJoinColumns = @JoinColumn(name = "collaborateur_id"))
+    @JsonIgnore
+    private List<Collaborateur> candidats;
+
+
     @Transient
     @JsonProperty("managerNom")
     public String getManagerNom() {

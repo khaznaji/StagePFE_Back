@@ -24,7 +24,7 @@ public class CodeVerification {
     private String activationCode;
     @Column(nullable = false)
     private Date expiryDate;
-    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER , cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER, cascade = CascadeType.PERSIST)
     @JoinColumn(nullable = false, name = "user_id")
     private User user;
     public CodeVerification(String token, User user, String activationCode ,int expirationInMinutes) {
