@@ -48,8 +48,8 @@ public class Collaborateur {
     )
     @JsonIgnore
     private List<Competence> competences;
-    @ManyToMany(mappedBy = "candidats")
-    @JsonIgnore
-    private List<Poste> postesCandidatures;
+    @OneToMany(mappedBy = "collaborateur")
+    private List<Candidature> candidatures;
+
 
 }

@@ -3,6 +3,7 @@ import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
 import com.example.backend.Repository.CollaborateurRepository;
 import com.example.backend.Repository.ManagerServiceRepository;
+import com.example.backend.Repository.PosteRepository;
 import com.example.backend.Repository.UserRepository;
 import com.example.backend.Security.jwt.JwtUtils;
 import com.example.backend.Security.services.UserDetailsImpl;
@@ -38,7 +39,8 @@ import java.util.*;
 public class UserController {
     @Autowired
     private  PasswordEncoder passwordEncoder;
-
+    @Autowired
+    private PosteRepository posteRepository;
     @Autowired
     private UserService userService;
     @Autowired
@@ -443,6 +445,8 @@ public class UserController {
             return ResponseEntity.notFound().build();
         }
     }
+
+
 
 
 }

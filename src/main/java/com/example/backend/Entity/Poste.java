@@ -42,13 +42,11 @@ public class Poste {
     private String description;
     private int nombrePostesDisponibles;
     private LocalDate dateCreation;
-    @ManyToMany
-    @JoinTable(
-            name = "poste_candidat", // Nom de la table d'association
-            joinColumns = @JoinColumn(name = "poste_id"),
-            inverseJoinColumns = @JoinColumn(name = "collaborateur_id"))
+
+    @OneToMany(mappedBy = "poste")
     @JsonIgnore
-    private List<Collaborateur> candidats;
+    private List<Candidature> candidatures;
+
 
 
     @Transient
