@@ -40,7 +40,7 @@ public class Collaborateur {
     private String bio ;
     @DateTimeFormat(pattern = "dd/MM/yyyy")
     private LocalDate dateEntree;
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "collab_competence",
             joinColumns = @JoinColumn(name = "collab_id"),
@@ -49,7 +49,13 @@ public class Collaborateur {
     @JsonIgnore
     private List<Competence> competences;
     @OneToMany(mappedBy = "collaborateur")
+    @JsonIgnore
     private List<Candidature> candidatures;
+    @OneToMany(mappedBy = "collaborateur", fetch = FetchType.LAZY)
+    @JsonIgnore
 
+    private List<Evaluation> evaluations;
+
+    private String resume ;
 
 }

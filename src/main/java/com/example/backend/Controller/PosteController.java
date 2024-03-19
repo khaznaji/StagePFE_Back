@@ -172,7 +172,7 @@ public class PosteController {
             Poste poste = optionalPoste.get();
             poste.setApprouveParManagerRH(false);
             poste.setArchive(true);
-            poste.setEncours(true);
+            poste.setEncours(false);
             posteRepository.save(poste); // Save the updated entity
             String managerEmail = poste.getManagerService().getManager().getEmail(); // Assuming ManagerService has an email field
             String subject = "Notification de Refus de Poste";
@@ -207,28 +207,15 @@ public class PosteController {
             responseBody.put("error", "Erreur le poste n est pas supprime");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);        }
     }
-   /* @GetMapping("/getApprovedPostes")
-    public ResponseEntity<List<Poste>> getApprovedPostes() {
-        List<Poste> approvedPostes = posteRepository.findByApprouveParManagerRHTrue();
 
-        System.out.println("Approved Postes:");
-        for (Poste poste : approvedPostes) {
-            System.out.println(poste);
-        }
-
-        return new ResponseEntity<>(approvedPostes, HttpStatus.OK);
-    }*/
    @DeleteMapping("/deletePosteByManagerService/{postId}")
    public ResponseEntity<?> deletePosteByManagerService(@PathVariable Long postId) {
        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-       Long managerServiceId = userDetails.getId(); // ID du ManagerService connecté
-
-       // Vérifiez si le poste peut être supprimé
+       Long managerServiceId = userDetails.getId();
        Optional<Poste> optionalPoste = posteRepository.findByIdAndEncours(postId, true);
        if (optionalPoste.isPresent()) {
            Poste poste = optionalPoste.get();
-           // Vérifiez si le ManagerService connecté est le propriétaire du poste
            if (poste.getManagerService().getManager().getId().equals(managerServiceId)) {
                posteRepository.delete(poste);
                Map<String, String> responseBody = new HashMap<>();
@@ -254,8 +241,6 @@ public class PosteController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         Long managerServiceId = userDetails.getId(); // ID du ManagerService connecté
-
-        // Vérifiez si le poste existe
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
         if (optionalPoste.isPresent()) {
             Poste poste = optionalPoste.get();
@@ -275,9 +260,8 @@ public class PosteController {
                     poste.setCompetences(competences);
                 }
                 posteRepository.save(poste); // Sauvegardez le poste mis à jour
-
                 Map<String, String> responseBody = new HashMap<>();
-                responseBody.put("message", "Poste mis à jour avec succès");
+                responseBody.put("message", "Poste mis à jour avec succès" + titre);
                 return ResponseEntity.ok(responseBody);
             } else {
                 Map<String, String> responseBody = new HashMap<>();

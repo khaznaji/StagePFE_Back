@@ -174,6 +174,38 @@ public class UserController {
         }
     }
 
+    @PutMapping("/updateProfileCollaborateur")
+    public ResponseEntity<Map<String, String>> updateCollaborateurProfile(
+            @RequestParam(value = "bio", required = false) String bio,
+            @RequestParam(value = "competences", required = false) List<Competence> competences
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        User user = userDetails.getUser();
+
+        Map<String, String> response = new HashMap<>();
+
+        // Update the bio if provided
+        if (bio != null) {
+            Collaborateur collaborateur = user.getCollaborateur();
+            collaborateur.setBio(bio);
+            collaborateurRepository.save(collaborateur);
+            response.put("bio", "Bio updated successfully");
+        }
+
+        // Update the competences if provided
+        if (competences != null) {
+            Collaborateur collaborateur = user.getCollaborateur();
+            collaborateur.setCompetences(competences);
+            collaborateurRepository.save(collaborateur);
+            response.put("competences", "Competences updated successfully");
+        }
+
+        // Return success message
+        response.put("success", "Profile updated successfully");
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/registerCollab")
     public ResponseEntity<Map<String, String>> registerCollab(@RequestBody User request) {
         try {
