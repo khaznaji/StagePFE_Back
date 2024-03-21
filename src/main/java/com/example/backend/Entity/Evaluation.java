@@ -31,6 +31,6 @@ public class Evaluation {
 
     private int evaluation; // Vous pouvez définir le type de données en fonction de votre système d'évaluation (par exemple, une évaluation sur 5 ou sur 10)
 
-    // Ajoutez d'autres propriétés si nécessaire
-
+    @Transient // Cette annotation indique que cette propriété ne sera pas persistée dans la base de données
+    private String competenceName;
 }

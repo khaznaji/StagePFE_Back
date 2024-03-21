@@ -45,4 +45,5 @@ public class CollaborateurService implements ICollaborateurService {
 
         return collaborateur;
     }
+
 }

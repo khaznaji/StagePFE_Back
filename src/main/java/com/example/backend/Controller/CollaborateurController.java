@@ -39,8 +39,7 @@ import java.util.stream.Collectors;
 public class CollaborateurController {
     @Autowired
     private CollaborateurRepository collaborateurRepository;
-    @Autowired
-    private CollaborateurService collaborateurService;
+
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -150,10 +149,11 @@ public class CollaborateurController {
         response.put("success", "Profile updated successfully");
         return ResponseEntity.ok(response);
     }
-    @PutMapping("/ajoutCompetenceCollaborateur")
-    public ResponseEntity<Map<String, String>> updateCompetenceCollaborateur(
-            @RequestParam(value = "competences", required = false) List<Competence> competences,
-            @RequestParam(value = "evaluations", required = false) List<Integer> evaluations
+
+    @PutMapping("/updateCollaborateurBio")
+    public ResponseEntity<Map<String, String>> updateCollaborateurBio(
+            @RequestParam(value = "bio", required = false) String bio
+
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -161,81 +161,83 @@ public class CollaborateurController {
 
         Map<String, String> response = new HashMap<>();
 
-        // Update the competences if provided
-        if (competences != null) {
-            Collaborateur collaborateur = collaborateurService.getCollaborateurWithEvaluations(user.getCollaborateur().getId()); // Appel de la méthode pour récupérer le collaborateur avec les évaluations chargées
-            List<Competence> existingCompetences = collaborateur.getCompetences();
-
-            // Add evaluations for each competence
-            if (evaluations != null && evaluations.size() == competences.size()) {
-                for (int i = 0; i < competences.size(); i++) {
-                    Competence competence = competences.get(i);
-                    int evaluationScore = evaluations.get(i);
-
-                    // Check if the competence already exists for the collaborator
-                    boolean competenceExists = existingCompetences.stream()
-                            .anyMatch(existingCompetence -> existingCompetence.getId().equals(competence.getId()));
-
-                    if (!competenceExists) {
-                        // Add the competence to the collaborator
-                        existingCompetences.add(competence);
-                        collaborateur.getCompetences().add(competence); // Ajout de la compétence au collaborateur
-
-                        // Add the evaluation for the new competence
-                        Evaluation evaluation = new Evaluation();
-                        evaluation.setCollaborateur(collaborateur);
-                        evaluation.setCompetence(competence);
-                        evaluation.setEvaluation(evaluationScore);
-
-                        // Save both the new competence and evaluation
-                        collaborateurRepository.save(collaborateur);
-                        evaluationRepository.save(evaluation);
-
-                        // Add success message for adding new competence and evaluation
-                        response.put("success", "La compétence " + competence.getNom() + " a été ajoutée avec succès avec une évaluation de " + evaluationScore);
-                    } else {
-                        // If the competence exists, find and update the existing evaluation
-                        Evaluation existingEvaluation = collaborateur.getEvaluations().stream()
-                                .filter(e -> e.getCompetence().getId().equals(competence.getId()))
-                                .findFirst()
-                                .orElse(null);
-
-                        if (existingEvaluation != null) {
-                            existingEvaluation.setEvaluation(evaluationScore);
-                            evaluationRepository.save(existingEvaluation);
-                            response.put("evaluationUpdated", "L'évaluation de la compétence " + competence.getNom() + " a été mise à jour avec succès");
-                        } else {
-                            // Add the evaluation for the existing competence
-                            Evaluation newEvaluation = new Evaluation();
-                            newEvaluation.setCollaborateur(collaborateur);
-                            newEvaluation.setCompetence(competence);
-                            newEvaluation.setEvaluation(evaluationScore);
-
-                            // Save the new evaluation
-                            evaluationRepository.save(newEvaluation);
-
-                            response.put("evaluationAdded", "L'évaluation de la compétence " + competence.getNom() + " a été ajoutée avec succès");
-                        }
-                    }
-                }
-            }
-
+        // Update the bio if provided
+        if (bio != null) {
+            Collaborateur collaborateur = user.getCollaborateur();
+            collaborateur.setBio(bio);
             collaborateurRepository.save(collaborateur);
-            response.put("competences", "Competences updated successfully");
+            response.put("bio", "Bio updated successfully");
         }
-
-        // Handle PDF file upload
-        // Handle PDF file upload
-
-        // Return response
+        // Return success message
+        response.put("success", "Profile updated successfully");
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/updateCollaborateurResume")
+    public ResponseEntity<Map<String, String>> updateCollaborateurResume(
+
+            @RequestParam(value = "resume", required = false) MultipartFile resume
+    ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        User user = userDetails.getUser();
+
+        Map<String, String> response = new HashMap<>();
+
+        if (resume != null) {
+            try {
+                // Directory where PDF files will be stored
+                String uploadDir = "C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\Resume\\";
+
+                // Create unique file name for the PDF
+                String fileName = UUID.randomUUID().toString() + "_" + resume.getOriginalFilename();
+
+                // Path to save the PDF file
+                Path filePath = Paths.get(uploadDir + fileName);
+
+                // Save the PDF file to the server
+                Files.copy(resume.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+                // Save the file path to the database
+                Collaborateur collaborateur = user.getCollaborateur();
+
+                // Delete the previous resume file if it exists
+                String previousResumePath = collaborateur.getResume();
+                if (previousResumePath != null) {
+                    try {
+                        Path previousFilePath = Paths.get(previousResumePath);
+                        Files.deleteIfExists(previousFilePath);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        // Handle file deletion error
+                        response.put("error", "Failed to delete previous Resume file");
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                    }
+                }
+
+                // Set the new resume path in the collaborateur entity
+// Construire le chemin relatif pour enregistrer le fichier
+                String relativeFilePath = "Resume/" + fileName;
+
+// Sauvegarder le chemin relatif dans la base de données
+                collaborateur.setResume(relativeFilePath);
+
+                collaborateurRepository.save(collaborateur);
+
+                response.put("resume", "Resume updated successfully");
+            } catch (IOException e) {
+                e.printStackTrace();
+                // Handle file upload error
+                response.put("error", "Failed to upload Resume file");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        }
 
 
-
-
-
+        // Return success message
+        response.put("success", "Profile updated successfully");
+        return ResponseEntity.ok(response);
+    }
     @GetMapping("/collaborateur/info")
         public Map<String, Object> getCollaborateurInfo(@AuthenticationPrincipal UserDetails userDetails) {
             // Récupérez le Collaborateur connecté
