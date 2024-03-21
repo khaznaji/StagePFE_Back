@@ -112,13 +112,6 @@ public class UserController {
     public long countCollaborateurs() {
         return userService.countCollaborateurs();
     }
-    @GetMapping("/chartData")
-    public Map<String, Long> getChartData() {
-        Map<String, Long> chartData = new HashMap<>();
-        chartData.put("collaborateurs", userService.countCollaborateurs());
-        chartData.put("managerServices", userService.countManagerServices());
-        return chartData;
-    }
     @GetMapping("/countManagerServices")
     public long countManagerServices() {
         return userService.countManagerServices();

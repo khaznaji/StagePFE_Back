@@ -215,11 +215,8 @@ public class CollaborateurController {
                     }
                 }
 
-                // Set the new resume path in the collaborateur entity
-// Construire le chemin relatif pour enregistrer le fichier
                 String relativeFilePath = "Resume/" + fileName;
 
-// Sauvegarder le chemin relatif dans la base de données
                 collaborateur.setResume(relativeFilePath);
 
                 collaborateurRepository.save(collaborateur);
