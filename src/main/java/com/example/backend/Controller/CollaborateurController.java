@@ -1,21 +1,27 @@
 package com.example.backend.Controller;
 
-import com.example.backend.Entity.Collaborateur;
-import com.example.backend.Entity.Competence;
-import com.example.backend.Entity.Evaluation;
-import com.example.backend.Entity.User;
+import com.example.backend.Configuration.MailConfig;
+import com.example.backend.Entity.*;
 import com.example.backend.Repository.CollaborateurRepository;
 import com.example.backend.Repository.EvaluationRepository;
+import com.example.backend.Repository.ManagerServiceRepository;
 import com.example.backend.Repository.UserRepository;
 import com.example.backend.Security.services.UserDetailsImpl;
+import com.example.backend.Security.verificationCode.CodeVerification;
+import com.example.backend.Security.verificationCode.CodeVerificationServiceImpl;
 import com.example.backend.Service.CollaborateurService;
+import com.example.backend.exception.EmailAlreadyExistsException;
+import com.example.backend.exception.ManagerServiceNotFoundException;
+import com.example.backend.exception.MatriculeAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -26,6 +32,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,14 +46,20 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/Collaborateur")
 public class CollaborateurController {
     @Autowired
-    private CollaborateurRepository collaborateurRepository;
-
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private ManagerServiceRepository managerServiceRepository;
     @Autowired
     private UserRepository userRepository;
     @Autowired
+    private CodeVerificationServiceImpl codeVerificationService;
+
+    @Autowired
+    private MailConfig emailService;
+    @Autowired
+    private CollaborateurRepository collaborateurRepository;
+    @Autowired
     private EvaluationRepository evaluationRepository;
-
-
     @PutMapping("/updateProfileCollaborateur")
     public ResponseEntity<Map<String, String>> updateCollaborateurProfile(
             @RequestParam(value = "bio", required = false) String bio,
@@ -158,24 +172,19 @@ public class CollaborateurController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         User user = userDetails.getUser();
-
         Map<String, String> response = new HashMap<>();
-
-        // Update the bio if provided
         if (bio != null) {
             Collaborateur collaborateur = user.getCollaborateur();
             collaborateur.setBio(bio);
             collaborateurRepository.save(collaborateur);
             response.put("bio", "Bio updated successfully");
         }
-        // Return success message
         response.put("success", "Profile updated successfully");
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/updateCollaborateurResume")
     public ResponseEntity<Map<String, String>> updateCollaborateurResume(
-
             @RequestParam(value = "resume", required = false) MultipartFile resume
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -200,8 +209,6 @@ public class CollaborateurController {
 
                 // Save the file path to the database
                 Collaborateur collaborateur = user.getCollaborateur();
-
-                // Delete the previous resume file if it exists
                 String previousResumePath = collaborateur.getResume();
                 if (previousResumePath != null) {
                     try {
@@ -258,25 +265,66 @@ public class CollaborateurController {
             collaborateurInfo.put("resume", collaborateur.getResume());
 
             // Récupérez les évaluations des compétences
-        List<Map<String, Object>> evaluations = collaborateur.getCompetences().stream()
-                .filter(competence -> {
-                    Evaluation evaluation = evaluationRepository.findByCollaborateurAndCompetence(collaborateur, competence)
-                            .orElse(null);
-                    return evaluation != null; // Garder uniquement les compétences avec évaluation
-                })
-                .map(competence -> {
-                    Evaluation evaluation = evaluationRepository.findByCollaborateurAndCompetence(collaborateur, competence)
-                            .orElse(null);
+        List<Map<String, Object>> evaluations = collaborateur.getEvaluations().stream()
+                .map(evaluation -> {
                     Map<String, Object> evaluationInfo = new HashMap<>();
-                    evaluationInfo.put("competenceName", competence.getNom());
+                    evaluationInfo.put("competenceName", evaluation.getCompetence().getNom());
                     evaluationInfo.put("evaluation", evaluation.getEvaluation());
                     return evaluationInfo;
                 })
                 .collect(Collectors.toList());
 
+
         collaborateurInfo.put("evaluations", evaluations);
 
             return collaborateurInfo;
         }
+    @PostMapping("/registerCollaborateur")
+    public ResponseEntity<?> registerCollaborateur(
+            @RequestParam("nom") String nom,
+            @RequestParam("prenom") String prenom,
+            @RequestParam("numtel") int numtel,
+            @RequestParam("matricule") String matricule,
+            @RequestParam("email") String email,
+            @RequestParam("gender") Gender gender,
+            @RequestParam("poste") String poste,
+            @RequestParam("managerServiceId") Long managerServiceId,
+            @RequestParam(value = "bio", required = false) String bio,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree
+    ) {
+        try {
+            User manager = new User();
+            manager.setNom(nom);
+            manager.setPrenom(prenom);
+            manager.setNumtel(numtel);
+            manager.setMatricule(matricule);
+            manager.setRole(Role.Collaborateur);
+            manager.setEmail(email);
+            manager.setPassword(passwordEncoder.encode("SopraHR2024"));
+            manager.setDate(LocalDateTime.now());
+            manager.setActivated(false);
+            manager.setGender(gender);
+            manager.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
+            User manager1 = userRepository.findByRoleAndId(Role.ManagerService, managerServiceId)
+                    .orElseThrow(() -> new ManagerServiceNotFoundException("Manager not found with id: " + managerServiceId));
+
+            User registeredManager = userRepository.save(manager);
+            Collaborateur request = new Collaborateur();
+            request.setCollaborateur(registeredManager);
+            request.setManagerService(manager1.getManagerService());
+            request.setDepartment(manager1.getDepartment());
+            request.setPoste(poste);
+            request.setBio(bio);
+            request.setDateEntree(dateEntree);
+            collaborateurRepository.save(request);
+            // Call your service method to register the manager service
+            CodeVerification verificationCode = codeVerificationService.createToken(manager);
+            String resetLink = "http://localhost:4200/activate-account?token=" + verificationCode.getToken();
+            emailService.sendWelcomeEmail(manager.getEmail(),manager.getNom(), resetLink, verificationCode.getActivationCode());
+            return new ResponseEntity<>(manager, HttpStatus.CREATED);
+        } catch (EmailAlreadyExistsException | MatriculeAlreadyExistsException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
     }
 

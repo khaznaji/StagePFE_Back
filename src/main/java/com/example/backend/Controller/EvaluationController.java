@@ -52,14 +52,18 @@ public class EvaluationController {
         // Rechercher la compétence correspondante à partir de son ID
         Optional<Competence> competenceOptional = competenceRepository.findById(competenceId);
         if (!competenceOptional.isPresent()) {
-            return new ResponseEntity<>("Compétence non trouvée pour l'ID: " + competenceId, HttpStatus.NOT_FOUND);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Compétence non trouvée pour l'ID: " + competenceId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
         Competence competence = competenceOptional.get();
 
         // Vérifier si une évaluation existe déjà pour cette compétence et ce collaborateur
         Optional<Evaluation> existingEvaluationOptional = evaluationRepository.findByCollaborateurAndCompetence(collaborateur, competence);
         if (existingEvaluationOptional.isPresent()) {
-            return new ResponseEntity<>("Vous avez déjà évalué cette compétence", HttpStatus.BAD_REQUEST);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Vous avez déjà évalué cette compétence");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
 
         // Créer une nouvelle évaluation
@@ -71,12 +75,15 @@ public class EvaluationController {
         // Enregistrer l'évaluation dans la base de données
         evaluationRepository.save(evaluation);
 
-        return new ResponseEntity<>("Évaluation ajoutée avec succès pour la compétence: " + competence.getNom(), HttpStatus.CREATED);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Évaluation ajoutée avec succès pour la compétence: " + competence.getNom());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/evaluation/{evaluationId}")
     public ResponseEntity<?> updateEvaluationById(@PathVariable("evaluationId") Long evaluationId,
-                                                  @RequestParam(value = "evaluation") int evaluation) {
+                                                  @RequestParam(value = "evaluation") int evaluation)
+    {
         // Récupérer l'utilisateur connecté
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -87,23 +94,21 @@ public class EvaluationController {
         Optional<Evaluation> existingEvaluationOptional = evaluationRepository.findById(evaluationId);
 
         if (!existingEvaluationOptional.isPresent()) {
-            return new ResponseEntity<>("Aucune évaluation trouvée pour cet identifiant", HttpStatus.NOT_FOUND);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Aucune évaluation trouvée pour cet identifiant");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
-
-        // Vérifier si l'utilisateur connecté est autorisé à modifier cette évaluation
-        // Vérifier si l'utilisateur connecté est autorisé à modifier cette évaluation
         Evaluation existingEvaluation = existingEvaluationOptional.get();
         if (!existingEvaluation.getCollaborateur().getId().equals(collaborateur.getId())) {
-            return new ResponseEntity<>("Vous n'êtes pas autorisé à modifier cette évaluation", HttpStatus.FORBIDDEN);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Vous n'êtes pas autorisé à modifier cette évaluation");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
-
-
-        // Mettre à jour l'évaluation
         existingEvaluation.setEvaluation(evaluation);
         evaluationRepository.save(existingEvaluation);
-
-        return new ResponseEntity<>("L'évaluation a été mise à jour avec succès", HttpStatus.OK);
-    }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "L'évaluation a été mise à jour avec succès");
+        return ResponseEntity.ok().body(response);  }
 
     @DeleteMapping("/evaluation/{evaluationId}")
     public ResponseEntity<?> deleteEvaluationById(@PathVariable("evaluationId") Long evaluationId) {
@@ -112,24 +117,22 @@ public class EvaluationController {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         User user = userDetails.getUser();
         Collaborateur collaborateur = user.getCollaborateur();
-
-        // Recherche de l'évaluation par son identifiant
         Optional<Evaluation> existingEvaluationOptional = evaluationRepository.findById(evaluationId);
-
         if (!existingEvaluationOptional.isPresent()) {
-            return new ResponseEntity<>("Aucune évaluation trouvée pour cet identifiant", HttpStatus.NOT_FOUND);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Aucune évaluation trouvée pour cet identifiant");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
-
-        // Vérifier si l'utilisateur connecté est autorisé à supprimer cette évaluation
         Evaluation existingEvaluation = existingEvaluationOptional.get();
         if (!existingEvaluation.getCollaborateur().getId().equals(collaborateur.getId())) {
-            return new ResponseEntity<>("Vous n'êtes pas autorisé à supprimer cette évaluation", HttpStatus.FORBIDDEN);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Vous n'êtes pas autorisé à supprimer cette évaluation");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
-
-        // Supprimer l'évaluation
         evaluationRepository.delete(existingEvaluation);
-
-        return new ResponseEntity<>("L'évaluation a été supprimée avec succès", HttpStatus.OK);
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "L'évaluation a été supprimée avec succès");
+        return ResponseEntity.ok().body(response);
     }
 
    @GetMapping("/evaluations")
