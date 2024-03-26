@@ -417,6 +417,7 @@ public class PosteController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+  /***** Candidature Controller********/
     @PutMapping("/updateState/{candidatureId}")
     public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
@@ -443,6 +444,8 @@ public class PosteController {
             candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
             candidatInfo.put("etat", candidature.getEtat().toString());
             candidatInfo.put("nom", user.getNom());
+            candidatInfo.put("image", user.getImage());
+
             candidatInfo.put("prenom", user.getPrenom());
             candidatInfo.put("email", user.getEmail());
             candidatInfo.put("collaborateur_id", collaborateur.getId().toString()); // ID du collaborateur
@@ -487,6 +490,8 @@ public class PosteController {
                     Map<String, Object> evaluationInfo = new HashMap<>();
                     evaluationInfo.put("competenceName", evaluation.getCompetence().getNom());
                     evaluationInfo.put("evaluation", evaluation.getEvaluation());
+                    evaluationInfo.put("domaine", evaluation.getCompetence().getDomaine());
+
                     return evaluationInfo;
                 })
                 .collect(Collectors.toList());

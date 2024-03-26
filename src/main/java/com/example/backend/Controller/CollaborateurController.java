@@ -269,6 +269,8 @@ public class CollaborateurController {
                 .map(evaluation -> {
                     Map<String, Object> evaluationInfo = new HashMap<>();
                     evaluationInfo.put("competenceName", evaluation.getCompetence().getNom());
+                    evaluationInfo.put("domaine", evaluation.getCompetence().getDomaine());
+
                     evaluationInfo.put("evaluation", evaluation.getEvaluation());
                     return evaluationInfo;
                 })
