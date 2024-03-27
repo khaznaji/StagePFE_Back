@@ -60,7 +60,7 @@ public class PosteController {
         poste.setNombrePostesDisponibles(nombrePostesDisponibles);
         poste.setTitre(titre);
         poste.setDescription(description);
-        poste.setApprouveParManagerRH(false);
+        poste.setPoste(EtatPoste.En_cours);
         poste.setCompetences(competences);
         System.out.println(poste);
         posteRepository.save(poste);
@@ -97,10 +97,7 @@ public class PosteController {
 
         if (optionalPoste.isPresent()) {
             Poste poste = optionalPoste.get();
-            poste.setApprouveParManagerRH(true);
-            poste.setEncours(false);
-
-            poste.setArchive(false); // Update the field to true
+           poste.setPoste(EtatPoste.Accepte);// Update the field to true
             posteRepository.save(poste); // Save the updated entity
             String managerEmail = poste.getManagerService().getManager().getEmail(); // Assuming ManagerService has an email field
             String subject = "Notification d'Approbation de Poste";
@@ -161,9 +158,7 @@ public class PosteController {
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
         if (optionalPoste.isPresent()) {
             Poste poste = optionalPoste.get();
-            poste.setApprouveParManagerRH(false);
-            poste.setArchive(true);
-            poste.setEncours(false);
+           poste.setPoste(EtatPoste.Rejete);
             posteRepository.save(poste); // Save the updated entity
             String managerEmail = poste.getManagerService().getManager().getEmail(); // Assuming ManagerService has an email field
             String subject = "Notification de Refus de Poste";
@@ -204,7 +199,7 @@ public class PosteController {
        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
        Long managerServiceId = userDetails.getId();
-       Optional<Poste> optionalPoste = posteRepository.findByIdAndEncours(postId, true);
+       Optional<Poste> optionalPoste = posteRepository.findById(postId);
        if (optionalPoste.isPresent()) {
            Poste poste = optionalPoste.get();
            if (poste.getManagerService().getManager().getId().equals(managerServiceId)) {
@@ -292,7 +287,7 @@ public class PosteController {
         }
     }
 
-   @GetMapping("/getApprovedAndNotAppliedPostes")
+   /*@GetMapping("/getApprovedAndNotAppliedPostes")
    public ResponseEntity<List<Poste>> getApprovedAndNotAppliedPostes() {
        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -320,7 +315,7 @@ public class PosteController {
        }
 
        return new ResponseEntity<>(approvedPostes, HttpStatus.OK);
-   }
+   }*/
 
     @GetMapping("/postulations")
     public ResponseEntity<List<Map<String, Object>>> getPostulations() {
@@ -348,20 +343,52 @@ public class PosteController {
         return new ResponseEntity<>(postulations, HttpStatus.OK);
     }
 
-    @GetMapping("/AllPostesByManagerService")
-    public ResponseEntity<List<Poste>> getAllPostesByManagerService() {
+    @GetMapping("/AllPostesApprouveByManagerService")
+    public ResponseEntity<List<Poste>> AllPostesApprouveByManagerService() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         ManagerService managerService = userDetails.getUser().getManagerService();
+
         if (managerService == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
         }
+
         List<Poste> postes = posteRepository.findAllByManagerService(managerService);
-        if (postes.isEmpty()) {
+        List<Poste> filteredPostes = postes.stream()
+                .filter(poste -> poste.getPoste() == EtatPoste.Accepte)
+                .collect(Collectors.toList());
+
+        if (filteredPostes.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
         }
-        return ResponseEntity.ok(postes);
+
+        return ResponseEntity.ok(filteredPostes);
     }
+
+
+
+    @GetMapping("/PostesEnCoursRefuseByManagerService")
+    public ResponseEntity<List<Poste>> PostesEnCoursRefuseByManagerService() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        ManagerService managerService = userDetails.getUser().getManagerService();
+
+        if (managerService == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        List<Poste> postes = posteRepository.findAllByManagerService(managerService);
+        List<Poste> filteredPostes = postes.stream()
+                .filter(poste -> poste.getPoste() == EtatPoste.En_cours || poste.getPoste() == EtatPoste.Rejete)
+                .collect(Collectors.toList());
+
+        if (filteredPostes.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(filteredPostes);
+    }
+
     @DeleteMapping("/deleteCompetence/{postId}/{competenceId}")
     public ResponseEntity<?> deleteCompetenceFromPoste(@PathVariable Long postId, @PathVariable Long competenceId) {
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
@@ -417,6 +444,24 @@ public class PosteController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+    @GetMapping("/demandesEnCours")
+    public ResponseEntity<List<Poste>> getDemandesEnCours() {
+        List<Poste> demandesEnCours = posteRepository.findByPoste(EtatPoste.En_cours);
+        return new ResponseEntity<>(demandesEnCours, HttpStatus.OK);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
   /***** Candidature Controller********/
     @PutMapping("/updateState/{candidatureId}")
     public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
@@ -491,7 +536,6 @@ public class PosteController {
                     evaluationInfo.put("competenceName", evaluation.getCompetence().getNom());
                     evaluationInfo.put("evaluation", evaluation.getEvaluation());
                     evaluationInfo.put("domaine", evaluation.getCompetence().getDomaine());
-
                     return evaluationInfo;
                 })
                 .collect(Collectors.toList());

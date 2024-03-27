@@ -69,7 +69,6 @@ public class ManagerServiceController {
             request.setManager(registeredManager);
             request.setDepartment(department);
             request.setPoste(poste);
-
             request.setDateEntree(dateEntree);
             managerServiceRepository.save(request);
 

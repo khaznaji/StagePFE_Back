@@ -27,9 +27,6 @@ public class Poste {
     @ManyToOne
     @JoinColumn(name = "manager_service_id")
     private ManagerService managerService;
-    private boolean approuveParManagerRH;
-    private boolean archive;
-    private boolean encours;
 
     @ManyToMany
     @JoinTable(
@@ -42,7 +39,8 @@ public class Poste {
     private String description;
     private int nombrePostesDisponibles;
     private LocalDate dateCreation;
-
+    @Enumerated(EnumType.STRING)
+    private EtatPoste poste;
     @OneToMany(mappedBy = "poste")
     @JsonIgnore
     private List<Candidature> candidatures;
