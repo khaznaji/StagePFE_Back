@@ -31,6 +31,10 @@ public class PosteService implements IPosteService{
 
         return posteRepository.save(poste);
     }
+    public Poste getPosteById(Long posteId) {
+        // Implémentez cette méthode pour récupérer un poste à partir de son ID
+        return posteRepository.findById(posteId).orElse(null);
+    }
     public Long getUserIdForCollaborateur(Long collaborateurId) {
         Collaborateur collaborateur = collaborateurRepository.findById(collaborateurId)
                 .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + collaborateurId));

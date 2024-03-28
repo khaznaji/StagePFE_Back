@@ -580,5 +580,18 @@ public class PosteController {
             return ResponseEntity.notFound().build();
         }
     }
+    @GetMapping("/getPosteByIdSimple/{postId}")
+    public ResponseEntity<Poste> getPosteByIdSimple(@PathVariable Long postId) {
+        Optional<Poste> optionalPoste = posteRepository.findById(postId);
+
+        if (optionalPoste.isPresent()) {
+            Poste poste = optionalPoste.get();
+            System.out.println("Poste found by ID: " + poste);
+            return new ResponseEntity<>(poste, HttpStatus.OK);
+        } else {
+            System.out.println("Poste not found with ID: " + postId);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
 }

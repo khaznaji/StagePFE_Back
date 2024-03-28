@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -45,22 +46,34 @@ public class Poste {
     @JsonIgnore
     private List<Candidature> candidatures;
 
-
+    @OneToMany(mappedBy = "poste",cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<Quiz> quizzes=new LinkedHashSet<>();
 
     @Transient
     @JsonProperty("managerNom")
     public String getManagerNom() {
-        return managerService != null ? managerService.getManager().getNom() : null;
+        if (managerService != null && managerService.getManager() != null) {
+            return managerService.getManager().getNom();
+        }
+        return null; // or return a default value if appropriate
     }
 
     @Transient
     @JsonProperty("managerPrenom")
     public String getManagerPrenom() {
-        return managerService != null ? managerService.getManager().getPrenom() : null;
+        if (managerService != null && managerService.getManager() != null) {
+            return managerService.getManager().getPrenom();
+        }
+        return null; // or return a default value if appropriate
     }
+
     @Transient
     @JsonProperty("image")
     public String getImage() {
-        return managerService != null ? managerService.getManager().getImage() : null;
+        if (managerService != null && managerService.getManager() != null) {
+            return managerService.getManager().getImage();
+        }
+        return null; // or return a default image path if appropriate
     }
 }
