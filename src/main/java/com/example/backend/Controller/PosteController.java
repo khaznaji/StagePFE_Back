@@ -287,35 +287,30 @@ public class PosteController {
         }
     }
 
-   /*@GetMapping("/getApprovedAndNotAppliedPostes")
-   public ResponseEntity<List<Poste>> getApprovedAndNotAppliedPostes() {
-       Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-       UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-       Long userId = userDetails.getId(); // ID de l'utilisateur
+    @GetMapping("/getApprovedAndNotAppliedPostes")
+    public ResponseEntity<List<Poste>> getApprovedAndNotAppliedPostes() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId(); // ID de l'utilisateur
 
-       // Recherche du collaborateur correspondant à l'utilisateur
-       Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
-               .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userId));
+        // Recherche du collaborateur correspondant à l'utilisateur
+        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userId));
 
-       // Récupérer tous les postes approuvés
-       List<Poste> approvedPostes = posteRepository.findByApprouveParManagerRHTrue();
+        // Récupérer les postes auxquels le collaborateur a postulé
+        List<Candidature> postulesParCollaborateur = collaborateur.getCandidatures();
 
-       // Récupérer les postes auxquels le collaborateur a postulé
-       List<Candidature> postulesParCollaborateur = collaborateur.getCandidatures();
+        // Récupérer tous les postes approuvés
+        List<Poste> approvedPostes = posteRepository.findByPoste(EtatPoste.Publie);
 
-       // Filtrer les postes approuvés pour exclure ceux auxquels le collaborateur a déjà postulé
-       approvedPostes = approvedPostes.stream()
-               .filter(poste -> postulesParCollaborateur.stream()
-                       .noneMatch(candidature -> candidature.getPoste().getId().equals(poste.getId())))
-               .collect(Collectors.toList());
+        // Filtrer les postes pour ne garder que ceux auxquels le collaborateur n'a pas postulé
+        List<Poste> postesNonPostules = approvedPostes.stream()
+                .filter(poste -> postulesParCollaborateur.stream()
+                        .noneMatch(candidature -> candidature.getPoste().equals(poste)))
+                .collect(Collectors.toList());
 
-       System.out.println("Postes approuvés non encore postulés par le collaborateur:");
-       for (Poste poste : approvedPostes) {
-           System.out.println(poste);
-       }
-
-       return new ResponseEntity<>(approvedPostes, HttpStatus.OK);
-   }*/
+        return new ResponseEntity<>(postesNonPostules, HttpStatus.OK);
+    }
 
     @GetMapping("/postulations")
     public ResponseEntity<List<Map<String, Object>>> getPostulations() {
@@ -449,8 +444,27 @@ public class PosteController {
         List<Poste> demandesEnCours = posteRepository.findByPoste(EtatPoste.En_cours);
         return new ResponseEntity<>(demandesEnCours, HttpStatus.OK);
     }
+    @PutMapping("/publieposte/{postId}")
+    public ResponseEntity<?> PubliePoste(@PathVariable Long postId) {
+        Optional<Poste> optionalPoste = posteRepository.findById(postId);
 
+        if (optionalPoste.isPresent()) {
+            Poste poste = optionalPoste.get();
+            poste.setPoste(EtatPoste.Publie); // Mettez à jour l'état du poste à Publie
+            posteRepository.save(poste); // Sauvegardez l'entité mise à jour
 
+            // Votre code pour envoyer un e-mail ou effectuer d'autres actions après l'approbation du poste
+
+            return new ResponseEntity<>(poste, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);
+        }
+    }
+    @GetMapping("/postepublie")
+    public ResponseEntity<List<Poste>> getPostePublie() {
+        List<Poste> demandesEnCours = posteRepository.findByPoste(EtatPoste.Publie);
+        return new ResponseEntity<>(demandesEnCours, HttpStatus.OK);
+    }
 
 
 
@@ -593,5 +607,6 @@ public class PosteController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
 
 }
