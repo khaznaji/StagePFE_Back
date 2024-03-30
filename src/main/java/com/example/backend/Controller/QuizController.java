@@ -1,5 +1,6 @@
 package com.example.backend.Controller;
 
+import com.example.backend.Entity.Collaborateur;
 import com.example.backend.Entity.Poste;
 import com.example.backend.Entity.Quiz;
 import com.example.backend.Repository.PosteRepository;
@@ -96,4 +97,5 @@ public class QuizController {
         poste.setId(cid);
         return quizService.getActiveQuizzesOfPoste(poste);
     }
+
 }

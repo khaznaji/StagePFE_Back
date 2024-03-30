@@ -31,6 +31,9 @@ public class Candidature {
 
     @DateTimeFormat(pattern = "dd/MM/yyyy")
     private LocalDate dateCandidature;
-
+    @ManyToOne
+    @JoinColumn(name = "quiz_id")
+    private Quiz quiz;
+    private int score; // Ajout de l'attribut score
 
 }

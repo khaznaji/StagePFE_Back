@@ -36,6 +36,9 @@ public class Quiz {
     @OneToMany(mappedBy = "quiz",cascade = CascadeType.ALL)
     @JsonIgnore
     private Set<Question> questions=new HashSet<>();
+    @OneToMany(mappedBy = "quiz", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<Candidature> candidatures = new HashSet<>();
 
     public Quiz() {
     }
@@ -99,7 +102,8 @@ public class Quiz {
     public Set<Question> getQuestions() {
         return questions;
     }
-
+    @Transient // Cette annotation évite de persister cette propriété en base de données
+    private Long candidatureId;
     public void setQuestions(Set<Question> questions) {
         this.questions = questions;
     }

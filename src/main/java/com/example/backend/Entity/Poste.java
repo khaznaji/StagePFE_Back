@@ -48,7 +48,7 @@ public class Poste {
 
     @OneToMany(mappedBy = "poste",cascade = CascadeType.ALL)
     @JsonIgnore
-    private Set<Quiz> quizzes=new LinkedHashSet<>();
+    private List<Quiz> quizzes;
 
     @Transient
     @JsonProperty("managerNom")

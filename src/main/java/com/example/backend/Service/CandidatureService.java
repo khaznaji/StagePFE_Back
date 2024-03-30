@@ -1,23 +1,32 @@
 package com.example.backend.Service;
 
-import com.example.backend.Entity.Candidature;
-import com.example.backend.Entity.EtatPostulation;
+import com.example.backend.Entity.*;
 import com.example.backend.Repository.CandidatureRepository;
+import com.example.backend.Repository.CollaborateurRepository;
+import com.example.backend.exception.CandidatureNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class CandidatureService {
 
     private final CandidatureRepository candidatureRepository;
+    @Autowired
+    private  CollaborateurRepository collaborateurRepository;
+
 
     @Autowired
     public CandidatureService(CandidatureRepository candidatureRepository) {
         this.candidatureRepository = candidatureRepository;
     }
-
+    public Candidature getCandidature(Long candidatureId) {
+        return candidatureRepository.findById(candidatureId)
+                .orElseThrow(() -> new CandidatureNotFoundException("Candidature not found with id: " + candidatureId));
+    }
     public Candidature modifierEtat(Long collaborateurId, Long posteId, EtatPostulation nouvelEtat) {
         Candidature candidature = candidatureRepository.findByCollaborateurIdAndPosteId(collaborateurId, posteId);
         if (candidature != null) {

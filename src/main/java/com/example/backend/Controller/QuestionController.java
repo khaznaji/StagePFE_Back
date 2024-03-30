@@ -1,8 +1,10 @@
 package com.example.backend.Controller;
 
 
+import com.example.backend.Entity.Candidature;
 import com.example.backend.Entity.Question;
 import com.example.backend.Entity.Quiz;
+import com.example.backend.Service.CandidatureService;
 import com.example.backend.Service.QuestionService;
 import com.example.backend.Service.QuizService;
 import com.example.backend.exception.QuizNotFoundException;
@@ -28,6 +30,8 @@ public class QuestionController {
 
     @Autowired
     private QuizService quizService;
+    @Autowired
+    private CandidatureService candidatureService;
 
     @PostMapping("/add")
     public ResponseEntity<?> addQuestion(@RequestBody Question question) {
@@ -51,9 +55,11 @@ public class QuestionController {
             throw new QuizNotFoundException("Quiz not found with ID: " + quizId);
         }
     }
-    @GetMapping("/quiz/{qid}")
-    public ResponseEntity<?> getQuestionsOfQuiz(@PathVariable("qid") Long qid) {
+    @GetMapping("/quiz/{qid}/candidature/{candidatureId}")
+    public ResponseEntity<?> getQuestionsOfQuiz(@PathVariable("qid") Long qid , @PathVariable("candidatureId") Long candidatureId) {
         Quiz quiz = quizService.getQuiz(qid);
+        Candidature candidature = candidatureService.getCandidature(candidatureId);
+
         Set<Question> questions = quiz.getQuestions();
         List<Question> list = new ArrayList<>(questions);
         if (list.size() > Integer.parseInt(quiz.getNumberOfQuestions())) {

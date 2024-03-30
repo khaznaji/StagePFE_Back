@@ -303,7 +303,7 @@ public class PosteController {
         // Récupérer tous les postes approuvés
         List<Poste> approvedPostes = posteRepository.findByPoste(EtatPoste.Publie);
 
-        // Filtrer les postes pour ne garder que ceux auxquels le collaborateur n'a pas postulé
+        // Filtrer les postes pour ne    garder que ceux auxquels le collaborateur n'a pas postulé
         List<Poste> postesNonPostules = approvedPostes.stream()
                 .filter(poste -> postulesParCollaborateur.stream()
                         .noneMatch(candidature -> candidature.getPoste().equals(poste)))
@@ -337,6 +337,40 @@ public class PosteController {
         }
         return new ResponseEntity<>(postulations, HttpStatus.OK);
     }
+    @GetMapping("/testsForConnectedCollaborator")
+    public ResponseEntity<?> getTestsForConnectedCollaborator() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId(); // ID de l'utilisateur
+
+        // Recherche du collaborateur correspondant à l'utilisateur
+        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userId));
+
+        // Récupérer la liste des candidatures du collaborateur
+        List<Candidature> candidatures = collaborateur.getCandidatures();
+
+        if (!candidatures.isEmpty()) {
+            List<Quiz> tests = new ArrayList<>();
+
+            // Pour chaque candidature, récupérer le test associé
+            for (Candidature candidature : candidatures) {
+                Quiz test = candidature.getQuiz();
+                System.out.println("jejz");
+                if (test != null) {
+                    test.setCandidatureId(candidature.getId());
+                    test.getCandidatures().add(candidature);
+                    tests.add(test);
+                }
+            }
+
+            return ResponseEntity.ok(tests);
+        } else {
+            // Collaborateur sans candidatures
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Aucune candidature trouvée pour le collaborateur");
+        }
+    }
+
 
     @GetMapping("/AllPostesApprouveByManagerService")
     public ResponseEntity<List<Poste>> AllPostesApprouveByManagerService() {
@@ -460,10 +494,32 @@ public class PosteController {
             return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);
         }
     }
-    @GetMapping("/postepublie")
-    public ResponseEntity<List<Poste>> getPostePublie() {
+    @GetMapping("/getPostePublieCoteManagerRh")
+    public ResponseEntity<List<Poste>> getPostePublieCoteManagerRh() {
+
         List<Poste> demandesEnCours = posteRepository.findByPoste(EtatPoste.Publie);
         return new ResponseEntity<>(demandesEnCours, HttpStatus.OK);
+    }
+    @GetMapping("/postepublie")
+    public ResponseEntity<List<Poste>> getPostePublie() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        ManagerService managerService = userDetails.getUser().getManagerService();
+
+        if (managerService == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        List<Poste> postes = posteRepository.findAllByManagerService(managerService);
+        List<Poste> filteredPostes = postes.stream()
+                .filter(poste -> poste.getPoste() == EtatPoste.Publie)
+                .collect(Collectors.toList());
+
+        if (filteredPostes.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(filteredPostes);
     }
 
 
@@ -477,7 +533,7 @@ public class PosteController {
 
 
   /***** Candidature Controller********/
-    @PutMapping("/updateState/{candidatureId}")
+  /* @PutMapping("/updateState/{candidatureId}")
     public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
         if (optionalCandidature.isPresent()) {
@@ -489,7 +545,43 @@ public class PosteController {
         } else {
             return ResponseEntity.notFound().build();
         }
-    }
+    }*/
+  @PutMapping("/updateState/{candidatureId}")
+  public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
+      Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
+      if (optionalCandidature.isPresent()) {
+          Candidature candidature = optionalCandidature.get();
+
+          // Vérifier si l'état est mis à jour à "preselection"
+          if (newState.equals("Preselection")) {
+              // Récupérer le poste associé à la candidature
+              Poste poste = candidature.getPoste();
+              if (poste != null) {
+                  // Récupérer tous les tests liés à ce poste
+                  List<Quiz> quizzes = poste.getQuizzes();
+                  if (!quizzes.isEmpty()) {
+                      // Générer un index aléatoire
+                      Random random = new Random();
+                      int randomIndex = random.nextInt(quizzes.size());
+
+                      // Récupérer le test aléatoire
+                      Quiz randomQuiz = quizzes.get(randomIndex);
+
+                      // Associer ce test à la candidature
+                      candidature.setQuiz(randomQuiz);
+                  }
+              }
+          }
+
+          // Mettre à jour l'état de la candidature
+          candidature.setEtat(EtatPostulation.valueOf(newState));
+          candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
+          return ResponseEntity.ok(candidature);
+      } else {
+          return ResponseEntity.notFound().build();
+      }
+  }
+
     @GetMapping("/AllCandidature/{postId}")
     public ResponseEntity<List<Map<String, String>>> getCandidaturesByPost(@PathVariable Long postId) {
         List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);
@@ -564,8 +656,11 @@ public class PosteController {
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
         if (optionalPoste.isPresent()) {
             Poste poste = optionalPoste.get();
-            Long count = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.EN_ATTENTE);
-            return ResponseEntity.ok(count);
+            long enAttenteCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.EN_ATTENTE);
+            long preselectionCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Preselection);
+            long entretienCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Entretien);
+            long totalCount = enAttenteCount + preselectionCount + entretienCount;
+            return ResponseEntity.ok(totalCount);
         } else {
             return ResponseEntity.notFound().build();
         }
@@ -607,6 +702,17 @@ public class PosteController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-
+    @PutMapping("/{candidatureId}/score")
+    public ResponseEntity<?> soumettreScoreQuiz(@PathVariable Long candidatureId, @RequestParam int score) {
+        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
+        if (optionalCandidature.isPresent()) {
+            Candidature candidature = optionalCandidature.get();
+            candidature.setScore(score); // Attribuer le score à la candidature
+            candidatureRepository.save(candidature); // Enregistrer la candidature mise à jour avec le score
+            return ResponseEntity.ok("Score enregistré avec succès pour la candidature avec l'ID : " + candidatureId);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 
 }
