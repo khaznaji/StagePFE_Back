@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -533,47 +535,24 @@ public class PosteController {
 
 
   /***** Candidature Controller********/
-  /* @PutMapping("/updateState/{candidatureId}")
-    public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
-        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
-        if (optionalCandidature.isPresent()) {
-            Candidature candidature = optionalCandidature.get();
-            // Mettre à jour l'état de la candidature
-            candidature.setEtat(EtatPostulation.valueOf(newState));
-            candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
-            return ResponseEntity.ok(candidature);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }*/
-  @PutMapping("/updateState/{candidatureId}")
+
+ @PutMapping("/updateState/{candidatureId}")
   public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
       Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
       if (optionalCandidature.isPresent()) {
           Candidature candidature = optionalCandidature.get();
-
-          // Vérifier si l'état est mis à jour à "preselection"
           if (newState.equals("Preselection")) {
-              // Récupérer le poste associé à la candidature
               Poste poste = candidature.getPoste();
               if (poste != null) {
-                  // Récupérer tous les tests liés à ce poste
                   List<Quiz> quizzes = poste.getQuizzes();
                   if (!quizzes.isEmpty()) {
-                      // Générer un index aléatoire
                       Random random = new Random();
                       int randomIndex = random.nextInt(quizzes.size());
-
-                      // Récupérer le test aléatoire
                       Quiz randomQuiz = quizzes.get(randomIndex);
-
-                      // Associer ce test à la candidature
                       candidature.setQuiz(randomQuiz);
                   }
               }
           }
-
-          // Mettre à jour l'état de la candidature
           candidature.setEtat(EtatPostulation.valueOf(newState));
           candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
           return ResponseEntity.ok(candidature);
@@ -581,6 +560,32 @@ public class PosteController {
           return ResponseEntity.notFound().build();
       }
   }
+    @PutMapping("/updateStateRefus/{candidatureId}")
+    public ResponseEntity<?> updateCandidatureStateRefus(@PathVariable Long candidatureId) {
+        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
+        if (optionalCandidature.isPresent()) {
+            Candidature candidature = optionalCandidature.get();
+            candidature.setEtat(EtatPostulation.REFUSEE);
+            candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
+            return ResponseEntity.ok(candidature);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+    @PutMapping("/updateStateEntretien/{candidatureId}")
+    public ResponseEntity<?> updateCandidatureStateEntretien(@PathVariable Long candidatureId) {
+        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
+        if (optionalCandidature.isPresent()) {
+            Candidature candidature = optionalCandidature.get();
+            candidature.setEtat(EtatPostulation.Entretien);
+            candidatureRepository.save(candidature);
+            return ResponseEntity.ok(candidature);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
 
     @GetMapping("/AllCandidature/{postId}")
     public ResponseEntity<List<Map<String, String>>> getCandidaturesByPost(@PathVariable Long postId) {
@@ -596,6 +601,7 @@ public class PosteController {
             candidatInfo.put("etat", candidature.getEtat().toString());
             candidatInfo.put("nom", user.getNom());
             candidatInfo.put("image", user.getImage());
+            candidatInfo.put("score", String.valueOf(candidature.getScore())); // Convert int to String
 
             candidatInfo.put("prenom", user.getPrenom());
             candidatInfo.put("email", user.getEmail());
@@ -603,6 +609,34 @@ public class PosteController {
             candidatInfo.put("poste_id", candidature.getPoste().getId().toString()); // ID du poste
 
             candidatsInfo.add(candidatInfo);
+        }
+
+        return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
+    }
+    @GetMapping("/AllCandidaturePreselectionne/{postId}")
+    public ResponseEntity<List<Map<String, String>>> AllCandidaturePreselectionne(@PathVariable Long postId) {
+        List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);
+        List<Map<String, String>> candidatsInfo = new ArrayList<>();
+
+        for (Candidature candidature : candidatures) {
+            if (candidature.getEtat() == EtatPostulation.Preselection) {
+                Collaborateur collaborateur = candidature.getCollaborateur();
+                User user = collaborateur.getCollaborateur();
+
+                Map<String, String> candidatInfo = new HashMap<>();
+                candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
+                candidatInfo.put("etat", candidature.getEtat().toString());
+                candidatInfo.put("nom", user.getNom());
+                candidatInfo.put("image", user.getImage());
+                candidatInfo.put("score", String.valueOf(candidature.getScore())); // Convert int to String
+
+                candidatInfo.put("prenom", user.getPrenom());
+                candidatInfo.put("email", user.getEmail());
+                candidatInfo.put("collaborateur_id", collaborateur.getId().toString()); // ID du collaborateur
+                candidatInfo.put("poste_id", candidature.getPoste().getId().toString()); // ID du poste
+
+                candidatsInfo.add(candidatInfo);
+            }
         }
 
         return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
@@ -707,12 +741,64 @@ public class PosteController {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
         if (optionalCandidature.isPresent()) {
             Candidature candidature = optionalCandidature.get();
-            candidature.setScore(score); // Attribuer le score à la candidature
-            candidatureRepository.save(candidature); // Enregistrer la candidature mise à jour avec le score
+
+            // Déterminer le seuil requis pour passer à l'état Entretien
+            Quiz quiz = candidature.getQuiz();
+            int maxMarks = Integer.parseInt(quiz.getMaxMarks());
+            double passingThreshold = 0.5 * maxMarks;
+
+            // Mettre à jour le score de la candidature
+            candidature.setScore(score);
+
+            // Vérifier si le score est supérieur ou égal au seuil pour passer à l'état Entretien
+            if (score >= passingThreshold) {
+                candidature.setEtat(EtatPostulation.Entretien);
+            } else {
+                candidature.setEtat(EtatPostulation.REFUSEE);
+                // Envoyer un e-mail de refus au candidat
+                String candidatEmail = candidature.getCollaborateur().getCollaborateur().getEmail();
+                String subject = "Réponse à votre candidature pour le poste " + candidature.getPoste().getTitre();
+                String body = "Cher/Chère " + candidature.getCollaborateur().getCollaborateur().getNom() + ",\n\n" +
+                        "Nous tenons à vous remercier pour l'intérêt que vous avez manifesté pour le poste de " +
+                        candidature.getPoste().getTitre() + " au sein de notre entreprise. Après une évaluation attentive de votre candidature, nous regrettons de vous informer que nous avons décidé de ne pas poursuivre le processus de recrutement avec votre profil.\n\n" +
+                        "Nous tenons à vous assurer que cette décision ne reflète en aucun cas sur vos qualifications ou vos compétences professionnelles. Nous avons reçu un grand nombre de candidatures très compétentes, et bien que votre profil soit impressionnant, nous avons dû faire un choix difficile.\n\n" +
+                        "Nous vous souhaitons le meilleur dans vos recherches futures et vous remercions encore une fois pour l'intérêt que vous avez porté à notre entreprise.\n\n" +
+                        "Cordialement,\n\n" +
+                        "L'équipe de recrutement de 4YOU";
+                emailService.sendEmail(candidatEmail, subject, body);
+
+                System.out.println("E-mail de refus envoyé à : " + candidatEmail);
+
+            }
+
+            candidatureRepository.save(candidature); // Enregistrer la candidature mise à jour avec le score et l'état
             return ResponseEntity.ok("Score enregistré avec succès pour la candidature avec l'ID : " + candidatureId);
         } else {
             return ResponseEntity.notFound().build();
         }
     }
+    @PutMapping("/updateCandidatureStateEntretien/{candidatureId}")
+    public ResponseEntity<?> updateCandidatureStateEntretien(@PathVariable Long candidatureId, @RequestParam String dateEntretien) {
+        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
+        if (optionalCandidature.isPresent()) {
+            Candidature candidature = optionalCandidature.get();
 
+            // Analyser la chaîne de date et d'heure en LocalDateTime
+            LocalDateTime entretienDateTime = LocalDateTime.parse(dateEntretien, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+
+            candidature.setEtat(EtatPostulation.Entretien);
+            candidature.setDateEntretien(entretienDateTime); // Mettre à jour la date et l'heure de l'entretien
+            candidatureRepository.save(candidature);
+
+            // Envoyer un e-mail au manager de service
+            emailService.sendEmailToManagerService(candidature);
+
+            // Envoyer un e-mail au collaborateur
+            emailService.sendEmailToCollaborateur(candidature);
+
+            return ResponseEntity.ok(candidature);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

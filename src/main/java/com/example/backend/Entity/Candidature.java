@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -34,6 +35,8 @@ public class Candidature {
     @ManyToOne
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
-    private int score; // Ajout de l'attribut score
+    private int score;
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+    private LocalDateTime dateEntretien;
 
 }

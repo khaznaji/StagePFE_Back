@@ -1,5 +1,6 @@
 package com.example.backend.Configuration;
 
+import com.example.backend.Entity.Candidature;
 import com.example.backend.Entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class MailConfig {
@@ -118,5 +120,43 @@ public class MailConfig {
         }
     }
 
+    public void sendEmailToManagerService(Candidature candidature) {
+        String managerName = candidature.getPoste().getManagerService().getManager().getNom();
+        String candidateName = candidature.getCollaborateur().getCollaborateur().getNom() + " " +
+                candidature.getCollaborateur().getCollaborateur().getPrenom();
+        String postTitle = candidature.getPoste().getTitre();
+        String interviewDateTime = candidature.getDateEntretien().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+
+        String subject = "Programmation d'un entretien pour le poste " + postTitle;
+        String body = "Cher/chère " + managerName + ",\n\n" +
+                "J'espère que ce message vous trouve bien.\n\n" +
+                "Nous avons le plaisir de vous informer que nous avons planifié un entretien pour le poste de " + postTitle + " avec un candidat de grande valeur, " + candidateName + ".\n\n" +
+                "Détails de l'entretien :\n" +
+                "- Date et heure : " + interviewDateTime + "\n" +
+                "- Durée : [Durée estimée]\n\n" +
+                "Veuillez noter cette date dans votre agenda. Si vous avez des empêchements ou des questions concernant cet entretien, n'hésitez pas à me contacter directement.\n\n" +
+                "Dans l'attente de cet entretien prometteur, je vous remercie pour votre coopération.\n\n" +
+                "Cordialement,\n" +
+                "[L'équipe de recrutement 4YOU]";
+
+        sendEmail(candidature.getPoste().getManagerService().getManager().getEmail(), subject, body);
+        System.out.println("E-mail envoyé au manager de service à : " + candidature.getPoste().getManagerService().getManager().getEmail());
+    }
+
+
+
+    public void sendEmailToCollaborateur(Candidature candidature) {
+        String subject = "Confirmation d'entretien en ligne pour le poste " + candidature.getPoste().getTitre();
+        String body = "Cher/Chère " + candidature.getCollaborateur().getCollaborateur().getPrenom() + ",\n\n" +
+                "Nous sommes ravis de vous informer que vous avez été sélectionné(e) pour un entretien en ligne pour le poste de " + candidature.getPoste().getTitre() + ".\n\n" +
+                "Date et heure de l'entretien : " + candidature.getDateEntretien().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) + ".\n\n" +
+                "L'entretien se déroulera en ligne via notre plateforme de recrutement. Vous pourrez accéder à toutes les informations relatives à cet entretien dans la section 'Mes entretiens' de notre plateforme.\n\n" +
+                "Nous vous recommandons de vous connecter quelques minutes avant l'heure prévue de l'entretien pour effectuer les éventuels réglages techniques nécessaires.\n\n" +
+                "Si vous avez des questions ou besoin d'assistance, n'hésitez pas à nous contacter.\n\n" +
+                "Cordialement,\nL'équipe de recrutement";
+
+
+        sendEmail(candidature.getCollaborateur().getCollaborateur().getEmail(), subject, body);
+    }
 }
 
