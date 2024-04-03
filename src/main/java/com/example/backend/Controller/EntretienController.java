@@ -83,7 +83,6 @@ public class EntretienController {
     public ResponseEntity<List<Map<String, Object>>> getEntretiensByPosteId(@PathVariable Long posteId) {
         List<Entretien> entretiens = entretienService.getEntretiensByPosteId(posteId);
         List<Map<String, Object>> entretiensAvecCollaborateurs = new ArrayList<>();
-
         for (Entretien entretien : entretiens) {
             Map<String, Object> entretienAvecCollaborateur = new HashMap<>();
             entretienAvecCollaborateur.put("entretien", entretien);
@@ -103,15 +102,21 @@ public class EntretienController {
         return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Entretien> updateEntretien(@PathVariable Long id, @RequestBody Entretien entretien) {
-        Entretien updatedEntretien = entretienService.updateEntretien(id, entretien);
-        if (updatedEntretien != null) {
-            return new ResponseEntity<>(updatedEntretien, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    @PutMapping("/{id}/update")
+    public ResponseEntity<String> updateEntretien(
+            @PathVariable Long id,
+            @RequestParam Long candidatureId,
+            @RequestParam String dateEntretien,
+            @RequestParam String heureDebut,
+            @RequestParam String heureFin) {
+        try {
+            entretienService.updateEntretien(id, candidatureId, dateEntretien, heureDebut, heureFin);
+            return ResponseEntity.ok("Entretien updated successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEntretien(@PathVariable Long id) {

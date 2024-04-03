@@ -59,18 +59,28 @@ public class EntretienService {
 
         return entretienRepository.save(entretien);
     }
+    public void updateEntretien(Long id, Long candidatureId, String dateEntretien, String heureDebut, String heureFin) {
+        // Vérifiez d'abord si l'entretien existe
+        Entretien entretien = entretienRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Entretien not found"));
+        Candidature candidature = candidatureRepository.findById(candidatureId)
+                .orElseThrow(() -> new IllegalArgumentException("Candidature not found with id: " + candidatureId));
+
+        // Mettez à jour les champs de l'entretien avec les nouvelles valeurs
+        entretien.setCandidature(candidature);
+        entretien.setDateEntretien(dateEntretien);
+        entretien.setHeureDebut(heureDebut);
+        entretien.setHeureFin(heureFin);
+
+        // Enregistrez les modifications dans la base de données
+        entretienRepository.save(entretien);
+    }
+
     public String generateRandomRoomId() {
         // Génère un identifiant UUID aléatoire
         return UUID.randomUUID().toString();
     }
-    public Entretien updateEntretien(Long id, Entretien updatedEntretien) {
-        Optional<Entretien> existingEntretien = entretienRepository.findById(id);
-        if (existingEntretien.isPresent()) {
-            updatedEntretien.setId(id);
-            return entretienRepository.save(updatedEntretien);
-        }
-        return null; // Gérer le cas où l'entretien n'existe pas
-    }
+
 
     public void deleteEntretien(Long id) {
         entretienRepository.deleteById(id);
