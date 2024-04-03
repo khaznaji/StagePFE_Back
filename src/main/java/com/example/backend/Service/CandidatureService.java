@@ -7,6 +7,7 @@ import com.example.backend.exception.CandidatureNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -45,4 +46,15 @@ public class CandidatureService {
         // par exemple, candidatureRepository.findByPosteId(postId)
         return candidatureRepository.findByPoste_Id(postId);
     }
+    public List<Candidature> getCandidaturesByPoste(Long posteId) {
+        return candidatureRepository.findByPosteId(posteId);
+    }
+
+  /*  public List<LocalDateTime> getCandidatureDatesByPoste(Long posteId) {
+        return candidatureRepository.findCandidatureDatesByPosteId(posteId);
+    }
+    public List<Object[]> getEntretienDatesAndCollaborateurInfoByPoste(Long posteId) {
+        return candidatureRepository.findEntretienDatesAndCollaborateurInfoByPosteId(posteId);
+    }
+*/
 }

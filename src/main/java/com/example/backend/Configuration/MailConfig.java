@@ -119,8 +119,7 @@ public class MailConfig {
             e.printStackTrace();
         }
     }
-
-    public void sendEmailToManagerService(Candidature candidature) {
+    /* public void sendEmailToManagerService(Candidature candidature) {
         String managerName = candidature.getPoste().getManagerService().getManager().getNom();
         String candidateName = candidature.getCollaborateur().getCollaborateur().getNom() + " " +
                 candidature.getCollaborateur().getCollaborateur().getPrenom();
@@ -157,6 +156,6 @@ public class MailConfig {
 
 
         sendEmail(candidature.getCollaborateur().getCollaborateur().getEmail(), subject, body);
-    }
+    } */
 }
 

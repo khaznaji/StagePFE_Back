@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -777,17 +778,31 @@ public class PosteController {
             return ResponseEntity.notFound().build();
         }
     }
-    @PutMapping("/updateCandidatureStateEntretien/{candidatureId}")
-    public ResponseEntity<?> updateCandidatureStateEntretien(@PathVariable Long candidatureId, @RequestParam String dateEntretien) {
+  /*  @GetMapping("/{posteId}/dates")
+    public ResponseEntity<List<LocalDateTime>> getCandidatureDatesByPoste(@PathVariable Long posteId) {
+        List<LocalDateTime> candidatureDates = candidatureService.getCandidatureDatesByPoste(posteId);
+        return new ResponseEntity<>(candidatureDates, HttpStatus.OK);
+    }
+    @GetMapping("/{posteId}/datesentretien")
+    public ResponseEntity<List<Object[]>> getEntretienDatesAndCollaborateurInfoByPoste(@PathVariable Long posteId) {
+        List<Object[]> entretienDatesAndCollaborateurInfo = candidatureService.getEntretienDatesAndCollaborateurInfoByPoste(posteId);
+        return new ResponseEntity<>(entretienDatesAndCollaborateurInfo, HttpStatus.OK);
+    }
+*/
+  /*  @PutMapping("/updateCandidatureStateEntretien/{candidatureId}")
+    public ResponseEntity<?> updateCandidatureStateEntretien(@PathVariable Long candidatureId, @RequestParam String dateEntretien , @RequestParam String dateEntretienFin) {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
         if (optionalCandidature.isPresent()) {
             Candidature candidature = optionalCandidature.get();
 
             // Analyser la chaîne de date et d'heure en LocalDateTime
             LocalDateTime entretienDateTime = LocalDateTime.parse(dateEntretien, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            LocalDateTime entretienDateTimeFin = LocalDateTime.parse(dateEntretienFin, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
             candidature.setEtat(EtatPostulation.Entretien);
-            candidature.setDateEntretien(entretienDateTime); // Mettre à jour la date et l'heure de l'entretien
+            candidature.setDateEntretien(entretienDateTime);
+            candidature.setDateFinEntretien(entretienDateTimeFin); // Mettre à jour la date et l'heure de l'entretien
+// Mettre à jour la date et l'heure de l'entretien
             candidatureRepository.save(candidature);
 
             // Envoyer un e-mail au manager de service
@@ -801,4 +816,6 @@ public class PosteController {
             return ResponseEntity.notFound().build();
         }
     }
+*/
+
 }

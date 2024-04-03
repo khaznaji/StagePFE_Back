@@ -49,6 +49,9 @@ public class Poste {
     @OneToMany(mappedBy = "poste",cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Quiz> quizzes;
+    @OneToMany(mappedBy = "poste", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<Entretien> entretiens;
 
     @Transient
     @JsonProperty("managerNom")
