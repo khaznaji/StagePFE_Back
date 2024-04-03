@@ -39,11 +39,31 @@ public class EntretienController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Entretien> getEntretienById(@PathVariable Long id) {
-        Optional<Entretien> entretien = entretienService.getEntretienById(id);
-        return entretien.map(value -> new ResponseEntity<>(value, HttpStatus.OK))
-                .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    public ResponseEntity<Map<String, Object>> getEntretienById(@PathVariable Long id) {
+        Optional<Entretien> entretienOptional = entretienService.getEntretienById(id);
+
+        if (entretienOptional.isPresent()) {
+            Entretien entretien = entretienOptional.get();
+
+            Map<String, Object> entretienAvecCollaborateur = new HashMap<>();
+            entretienAvecCollaborateur.put("entretien", entretien);
+
+            // Obtenez la candidature associée à l'entretien
+            Candidature candidature = entretien.getCandidature();
+            if (candidature != null) {
+                Collaborateur collaborateur = candidature.getCollaborateur();
+                if (collaborateur != null) {
+                    // Ajoutez les détails du collaborateur à la réponse
+                    entretienAvecCollaborateur.put("nomCollaborateur", collaborateur.getCollaborateur().getNom());
+                    entretienAvecCollaborateur.put("prenomCollaborateur", collaborateur.getCollaborateur().getPrenom());
+                }
+            }
+            return new ResponseEntity<>(entretienAvecCollaborateur, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
+
 
     @PostMapping("/create")
     public ResponseEntity<String> createEntretien(
