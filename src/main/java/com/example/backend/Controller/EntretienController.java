@@ -191,4 +191,16 @@ public class EntretienController {
 
         return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
     }
+    @PutMapping("/{id}/noter")
+    public ResponseEntity<String> noterEntretien(
+            @PathVariable Long id,
+            @RequestParam int note,
+            @RequestParam String commentaire) {
+        try {
+            entretienService.noterEntretien(id, note, commentaire);
+            return ResponseEntity.ok("Entretien noté avec succès");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

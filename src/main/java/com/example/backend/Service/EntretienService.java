@@ -10,6 +10,7 @@ import com.example.backend.Repository.PosteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
@@ -88,5 +89,16 @@ public class EntretienService {
 
     public List<Entretien> getEntretiensByCollaborateurId(Long collaborateurId) {
         return entretienRepository.findByCandidature_Collaborateur_Id(collaborateurId);
+    }
+    public void noterEntretien(Long id, int note, String commentaire) {
+        Entretien entretien = entretienRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + id));
+
+        // Mettre à jour la note et le commentaire de l'entretien
+        entretien.setNote(note);
+        entretien.setCommentaire(commentaire);
+
+        // Enregistrer les modifications
+        entretienRepository.save(entretien);
     }
 }

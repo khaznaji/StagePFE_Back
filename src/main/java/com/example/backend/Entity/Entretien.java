@@ -28,5 +28,7 @@ public class Entretien {
     @JoinColumn(name = "poste_id") // Colonne dans la table Entretien qui stockera l'ID du poste
     private Poste poste;
     private String roomId; // Identifiant de la salle de réunion
+    private String commentaire; // Identifiant de la salle de réunion
+    private int note; // Identifiant de la salle de réunion
 
 }
