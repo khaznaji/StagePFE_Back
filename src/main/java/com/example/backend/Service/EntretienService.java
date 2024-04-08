@@ -85,4 +85,8 @@ public class EntretienService {
     public void deleteEntretien(Long id) {
         entretienRepository.deleteById(id);
     }
+
+    public List<Entretien> getEntretiensByCollaborateurId(Long collaborateurId) {
+        return entretienRepository.findByCandidature_Collaborateur_Id(collaborateurId);
+    }
 }

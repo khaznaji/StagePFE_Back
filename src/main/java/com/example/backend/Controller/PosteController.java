@@ -476,6 +476,41 @@ public class PosteController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+    @GetMapping("/getCandidatsByPosteIdEnAttenteEntretien/{postId}")
+    public ResponseEntity<List<Map<String, String>>> getCandidatsByPosteIdEnAttenteEntretien(@PathVariable Long postId) {
+        Optional<Poste> optionalPoste = posteRepository.findById(postId);
+
+        if (optionalPoste.isPresent()) {
+            Poste poste = optionalPoste.get();
+
+            // Récupérer toutes les candidatures associées à ce poste
+            List<Candidature> candidatures = candidatureRepository.findByPoste(poste);
+
+            // Extraire les informations des collaborateurs (nom, prénom, email) de chaque candidature
+            List<Map<String, String>> candidatsInfo = new ArrayList<>();
+            for (Candidature candidature : candidatures) {
+                if (candidature.getEtat().equals(EtatPostulation.EN_ATTENTE_ENTRETIEN)) { // Filtrer par l'état de la candidature
+                    Collaborateur collaborateur = candidature.getCollaborateur();
+                    User user = collaborateur.getCollaborateur();
+
+                    Map<String, String> candidatInfo = new HashMap<>();
+                    candidatInfo.put("id", candidature.getId().toString()); // Ajouter l'ID du candidat
+                    candidatInfo.put("etat", candidature.getEtat().toString());
+
+                    candidatInfo.put("nom", user.getNom());
+                    candidatInfo.put("prenom", user.getPrenom());
+                    candidatInfo.put("email", user.getEmail());
+
+                    candidatsInfo.add(candidatInfo);
+                }
+            }
+
+            return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
     @GetMapping("/demandesEnCours")
     public ResponseEntity<List<Poste>> getDemandesEnCours() {
         List<Poste> demandesEnCours = posteRepository.findByPoste(EtatPoste.En_cours);
@@ -578,7 +613,7 @@ public class PosteController {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
         if (optionalCandidature.isPresent()) {
             Candidature candidature = optionalCandidature.get();
-            candidature.setEtat(EtatPostulation.Entretien);
+            candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN);
             candidatureRepository.save(candidature);
             return ResponseEntity.ok(candidature);
         } else {
@@ -693,8 +728,10 @@ public class PosteController {
             Poste poste = optionalPoste.get();
             long enAttenteCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.EN_ATTENTE);
             long preselectionCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Preselection);
+            long attenteentretienCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.EN_ATTENTE_ENTRETIEN);
             long entretienCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Entretien);
-            long totalCount = enAttenteCount + preselectionCount + entretienCount;
+
+            long totalCount = enAttenteCount + preselectionCount + entretienCount + attenteentretienCount;
             return ResponseEntity.ok(totalCount);
         } else {
             return ResponseEntity.notFound().build();
@@ -753,7 +790,7 @@ public class PosteController {
 
             // Vérifier si le score est supérieur ou égal au seuil pour passer à l'état Entretien
             if (score >= passingThreshold) {
-                candidature.setEtat(EtatPostulation.Entretien);
+                candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN);
             } else {
                 candidature.setEtat(EtatPostulation.REFUSEE);
                 // Envoyer un e-mail de refus au candidat

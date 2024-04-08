@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface EntretienRepository extends JpaRepository<Entretien,Long> {
     List<Entretien> findByPosteId(Long posteId);
+    List<Entretien> findByCandidature_Collaborateur_Id(Long collaborateurId);
 
 }
