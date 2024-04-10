@@ -39,5 +39,6 @@ public class Candidature {
     @OneToOne(mappedBy = "candidature")
     @JsonIgnore // Ignore la sérialisation JSON de cet attribut
     private Entretien entretien;
-
+    @Enumerated(EnumType.STRING)
+    private EtatQuizz etatQuizz;
 }

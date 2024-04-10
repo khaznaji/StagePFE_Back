@@ -41,20 +41,20 @@ public class CandidatureService {
         return candidatureRepository.findAll();
     }
     public List<Candidature> getCandidaturesByPost(Long postId) {
-        // Implémentez la logique pour récupérer les candidatures associées à un poste spécifique
-        // Vous pouvez accéder à votre repository de candidature pour exécuter une requête appropriée
-        // par exemple, candidatureRepository.findByPosteId(postId)
-        return candidatureRepository.findByPoste_Id(postId);
+        return candidatureRepository.findByPosteId(postId);
     }
+
     public List<Candidature> getCandidaturesByPoste(Long posteId) {
         return candidatureRepository.findByPosteId(posteId);
     }
+public void updateCandidaturesToEnAttente(List<Long> candidatureIds) {
+      for (Long candidatureId : candidatureIds) {
+          Candidature candidature = candidatureRepository.findById(candidatureId)
+                  .orElseThrow(() -> new RuntimeException("Candidature not found with id: " + candidatureId));
 
-  /*  public List<LocalDateTime> getCandidatureDatesByPoste(Long posteId) {
-        return candidatureRepository.findCandidatureDatesByPosteId(posteId);
-    }
-    public List<Object[]> getEntretienDatesAndCollaborateurInfoByPoste(Long posteId) {
-        return candidatureRepository.findEntretienDatesAndCollaborateurInfoByPosteId(posteId);
-    }
-*/
+          candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN_RH);
+          candidatureRepository.save(candidature);
+      }
+  }
+
 }

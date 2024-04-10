@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface CandidatureRepository extends JpaRepository<Candidature,Long> {
     boolean existsByCollaborateurAndPoste(Collaborateur collaborateur, Poste poste);
@@ -16,8 +17,10 @@ public interface CandidatureRepository extends JpaRepository<Candidature,Long> {
     Long countByPosteAndEtat(Poste poste, EtatPostulation etat);
     List<Candidature> findByPoste_Id(Long posteId);
     List<Candidature> findByPosteId(Long posteId);
+    Optional<Candidature> findByEntretienId(Long entretienId);
 
-  /*  @Query("SELECT c.dateEntretien FROM Candidature c WHERE c.poste.id = :posteId AND c.dateEntretien IS NOT NULL")
+
+    /*  @Query("SELECT c.dateEntretien FROM Candidature c WHERE c.poste.id = :posteId AND c.dateEntretien IS NOT NULL")
     List<LocalDateTime> findCandidatureDatesByPosteId(Long posteId);
     @Query("SELECT c.dateEntretien,c.dateFinEntretien, c.collaborateur.collaborateur.nom, c.collaborateur.collaborateur.prenom FROM Candidature c WHERE c.poste.id = :posteId AND c.dateEntretien IS NOT NULL")
     List<Object[]> findEntretienDatesAndCollaborateurInfoByPosteId(Long posteId);

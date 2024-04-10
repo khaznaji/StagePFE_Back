@@ -3,6 +3,7 @@ package com.example.backend.Service;
 import com.example.backend.Entity.Candidature;
 import com.example.backend.Entity.Entretien;
 
+import com.example.backend.Entity.EtatEntretien;
 import com.example.backend.Entity.Poste;
 import com.example.backend.Repository.CandidatureRepository;
 import com.example.backend.Repository.EntretienRepository;
@@ -57,6 +58,7 @@ public class EntretienService {
         entretien.setPoste(poste);
         String roomId = generateRandomRoomId();
         entretien.setRoomId(roomId);
+        entretien.setEtatEntretien(EtatEntretien.En_Attente);
 
         return entretienRepository.save(entretien);
     }
@@ -90,15 +92,23 @@ public class EntretienService {
     public List<Entretien> getEntretiensByCollaborateurId(Long collaborateurId) {
         return entretienRepository.findByCandidature_Collaborateur_Id(collaborateurId);
     }
+    public List<Entretien> getEntretiensByManagerId(Long collaborateurId) {
+        return entretienRepository.findByCandidature_Collaborateur_Id(collaborateurId);
+    }
     public void noterEntretien(Long id, int note, String commentaire) {
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + id));
-
-        // Mettre à jour la note et le commentaire de l'entretien
         entretien.setNote(note);
         entretien.setCommentaire(commentaire);
-
-        // Enregistrer les modifications
+        entretien.setEtatEntretien(EtatEntretien.Termine);
         entretienRepository.save(entretien);
     }
+
+    public List<Entretien> getEntretiensByPoste(Long postId) {
+        return entretienRepository.findByPosteId(postId);
+    }
+    public Optional<Entretien> getEntretienByCandidatureId(Long candidatureId) {
+        return entretienRepository.findByCandidatureId(candidatureId);
+    }
+
 }

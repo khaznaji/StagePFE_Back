@@ -8,6 +8,7 @@ import com.example.backend.Repository.ManagerServiceRepository;
 import com.example.backend.Repository.PosteRepository;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.CandidatureService;
+import com.example.backend.Service.EntretienService;
 import com.example.backend.Service.PosteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,8 @@ public class PosteController {
     private MailConfig emailService;
     @Autowired
     private CandidatureService candidatureService;
+    @Autowired
+    private EntretienService entretienService;
     @Autowired
     private ManagerServiceRepository managerServiceRepository;
     @PostMapping("/create")
@@ -340,6 +343,21 @@ public class PosteController {
         }
         return new ResponseEntity<>(postulations, HttpStatus.OK);
     }
+    @PutMapping("/updateEtatQuizz/{candidatureId}")
+    public ResponseEntity <Map<String, String>> updateEtatQuizz(@PathVariable Long candidatureId) {
+        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
+        if (optionalCandidature.isPresent()) {
+            Candidature candidature = optionalCandidature.get();
+            candidature.setEtatQuizz(EtatQuizz.Termine); // Mettre à jour l'état du quiz à "Termine"
+            candidatureRepository.save(candidature);
+            Map<String, String> responseBody = new HashMap<>();
+            responseBody.put("message", "L'état du quiz a été mis à jour avec succès pour la candidature avec l'ID  : " );
+            return ResponseEntity.ok(responseBody);// Sauvegarder la candidature mise à jour
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/testsForConnectedCollaborator")
     public ResponseEntity<?> getTestsForConnectedCollaborator() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -356,20 +374,19 @@ public class PosteController {
         if (!candidatures.isEmpty()) {
             List<Quiz> tests = new ArrayList<>();
 
-            // Pour chaque candidature, récupérer le test associé
             for (Candidature candidature : candidatures) {
-                Quiz test = candidature.getQuiz();
-                System.out.println("jejz");
-                if (test != null) {
-                    test.setCandidatureId(candidature.getId());
-                    test.getCandidatures().add(candidature);
-                    tests.add(test);
+                if (candidature.getEtatQuizz() == EtatQuizz.En_Attente) {
+                    Quiz test = candidature.getQuiz();
+                    if (test != null) {
+                        test.setCandidatureId(candidature.getId());
+                        test.getCandidatures().add(candidature);
+                        tests.add(test);
+                    }
                 }
             }
 
             return ResponseEntity.ok(tests);
         } else {
-            // Collaborateur sans candidatures
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Aucune candidature trouvée pour le collaborateur");
         }
     }
@@ -572,7 +589,7 @@ public class PosteController {
 
   /***** Candidature Controller********/
 
- @PutMapping("/updateState/{candidatureId}")
+  @PutMapping("/updateState/{candidatureId}")
   public ResponseEntity<?> updateCandidatureState(@PathVariable Long candidatureId, @RequestParam String newState) {
       Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
       if (optionalCandidature.isPresent()) {
@@ -586,6 +603,7 @@ public class PosteController {
                       int randomIndex = random.nextInt(quizzes.size());
                       Quiz randomQuiz = quizzes.get(randomIndex);
                       candidature.setQuiz(randomQuiz);
+                      candidature.setEtatQuizz(EtatQuizz.En_Attente); // Mettre à jour l'état du quiz à "En_Attente"
                   }
               }
           }
@@ -596,6 +614,7 @@ public class PosteController {
           return ResponseEntity.notFound().build();
       }
   }
+
     @PutMapping("/updateStateRefus/{candidatureId}")
     public ResponseEntity<?> updateCandidatureStateRefus(@PathVariable Long candidatureId) {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
@@ -649,23 +668,23 @@ public class PosteController {
 
         return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
     }
-    @GetMapping("/AllCandidaturePreselectionne/{postId}")
-    public ResponseEntity<List<Map<String, String>>> AllCandidaturePreselectionne(@PathVariable Long postId) {
+    @GetMapping("/CandidaturesSpecifiques/{postId}")
+    public ResponseEntity<List<Map<String, String>>> getCandidaturesSpecifiques(@PathVariable Long postId) {
         List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);
         List<Map<String, String>> candidatsInfo = new ArrayList<>();
 
         for (Candidature candidature : candidatures) {
-            if (candidature.getEtat() == EtatPostulation.Preselection) {
+            EtatQuizz etatQuizz = candidature.getEtatQuizz();
+
+            if (etatQuizz == EtatQuizz.Termine) {
                 Collaborateur collaborateur = candidature.getCollaborateur();
                 User user = collaborateur.getCollaborateur();
-
                 Map<String, String> candidatInfo = new HashMap<>();
                 candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
                 candidatInfo.put("etat", candidature.getEtat().toString());
                 candidatInfo.put("nom", user.getNom());
                 candidatInfo.put("image", user.getImage());
                 candidatInfo.put("score", String.valueOf(candidature.getScore())); // Convert int to String
-
                 candidatInfo.put("prenom", user.getPrenom());
                 candidatInfo.put("email", user.getEmail());
                 candidatInfo.put("collaborateur_id", collaborateur.getId().toString()); // ID du collaborateur
@@ -677,6 +696,45 @@ public class PosteController {
 
         return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
     }
+
+    @PostMapping("/updateEtatToEnAttente")
+    public ResponseEntity<?> updateCandidaturesEtatToEnAttente(@RequestBody List<Long> candidatureIds) {
+        candidatureService.updateCandidaturesToEnAttente(candidatureIds);
+        return ResponseEntity.ok().build();
+    }
+
+
+    @GetMapping("/CandidatsVersEntretienRh/{postId}")
+    public ResponseEntity<List<Map<String, String>>> CandidatsVersEntretienRh(@PathVariable Long postId) {
+        List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);
+        List<Map<String, String>> candidatsInfo = new ArrayList<>();
+        for (Candidature candidature : candidatures) {
+            EtatPostulation etat = candidature.getEtat();
+            if (etat == EtatPostulation.Entretien) {
+                Collaborateur collaborateur = candidature.getCollaborateur();
+                User user = collaborateur.getCollaborateur();
+                // Récupérer les informations d'entretien associées à la candidature
+                Optional<Entretien> entretienOptional = entretienService.getEntretienByCandidatureId(candidature.getId());
+                if (entretienOptional.isPresent()) {
+                    Entretien entretien = entretienOptional.get();
+                    Map<String, String> candidatInfo = new HashMap<>();
+                    candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
+                    candidatInfo.put("etat", etat.toString());
+                    candidatInfo.put("nom", user.getNom());
+                    candidatInfo.put("image", user.getImage());
+                    candidatInfo.put("score", String.valueOf(candidature.getScore())); // Convert int to String
+                    candidatInfo.put("prenom", user.getPrenom());
+                    candidatInfo.put("email", user.getEmail());
+                    candidatInfo.put("collaborateur_id", collaborateur.getId().toString()); // ID du collaborateur
+                    candidatInfo.put("poste_id", candidature.getPoste().getId().toString()); // ID du poste
+                    candidatInfo.put("note", String.valueOf(entretien.getNote())); // Convertir int en String
+                    candidatsInfo.add(candidatInfo);
+                }
+            }
+        }
+        return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
+    }
+
 
     @PutMapping("/modifierEtat/{collaborateurId}/{posteId}/{newState}")
     public Candidature modifierEtat(
@@ -697,9 +755,6 @@ public class PosteController {
         collaborateurInfo.put("prenom", collaborateur.getCollaborateur().getPrenom());
         collaborateurInfo.put("poste", collaborateur.getPoste());
         collaborateurInfo.put("dateEntree", collaborateur.getDateEntree());
-
-
-
         collaborateurInfo.put("departement", collaborateur.getDepartment().name()); // Assurez-vous que Departement est un enum
         collaborateurInfo.put("bio", collaborateur.getBio());
         collaborateurInfo.put("image", collaborateur.getCollaborateur().getImage());
@@ -730,8 +785,10 @@ public class PosteController {
             long preselectionCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Preselection);
             long attenteentretienCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.EN_ATTENTE_ENTRETIEN);
             long entretienCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Entretien);
+            long entretienRhCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.EN_ATTENTE_ENTRETIEN_RH);
+            long enAttenteRhCount = candidatureRepository.countByPosteAndEtat(poste, EtatPostulation.Entretien_Rh);
 
-            long totalCount = enAttenteCount + preselectionCount + entretienCount + attenteentretienCount;
+            long totalCount = enAttenteCount + preselectionCount + entretienCount + attenteentretienCount +entretienRhCount +enAttenteRhCount;
             return ResponseEntity.ok(totalCount);
         } else {
             return ResponseEntity.notFound().build();
@@ -815,44 +872,7 @@ public class PosteController {
             return ResponseEntity.notFound().build();
         }
     }
-  /*  @GetMapping("/{posteId}/dates")
-    public ResponseEntity<List<LocalDateTime>> getCandidatureDatesByPoste(@PathVariable Long posteId) {
-        List<LocalDateTime> candidatureDates = candidatureService.getCandidatureDatesByPoste(posteId);
-        return new ResponseEntity<>(candidatureDates, HttpStatus.OK);
-    }
-    @GetMapping("/{posteId}/datesentretien")
-    public ResponseEntity<List<Object[]>> getEntretienDatesAndCollaborateurInfoByPoste(@PathVariable Long posteId) {
-        List<Object[]> entretienDatesAndCollaborateurInfo = candidatureService.getEntretienDatesAndCollaborateurInfoByPoste(posteId);
-        return new ResponseEntity<>(entretienDatesAndCollaborateurInfo, HttpStatus.OK);
-    }
-*/
-  /*  @PutMapping("/updateCandidatureStateEntretien/{candidatureId}")
-    public ResponseEntity<?> updateCandidatureStateEntretien(@PathVariable Long candidatureId, @RequestParam String dateEntretien , @RequestParam String dateEntretienFin) {
-        Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
-        if (optionalCandidature.isPresent()) {
-            Candidature candidature = optionalCandidature.get();
 
-            // Analyser la chaîne de date et d'heure en LocalDateTime
-            LocalDateTime entretienDateTime = LocalDateTime.parse(dateEntretien, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-            LocalDateTime entretienDateTimeFin = LocalDateTime.parse(dateEntretienFin, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
-            candidature.setEtat(EtatPostulation.Entretien);
-            candidature.setDateEntretien(entretienDateTime);
-            candidature.setDateFinEntretien(entretienDateTimeFin); // Mettre à jour la date et l'heure de l'entretien
-// Mettre à jour la date et l'heure de l'entretien
-            candidatureRepository.save(candidature);
-
-            // Envoyer un e-mail au manager de service
-            emailService.sendEmailToManagerService(candidature);
-
-            // Envoyer un e-mail au collaborateur
-            emailService.sendEmailToCollaborateur(candidature);
-
-            return ResponseEntity.ok(candidature);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
-*/
 
 }
