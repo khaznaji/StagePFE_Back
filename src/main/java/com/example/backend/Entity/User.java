@@ -43,6 +43,9 @@ public  class User {
     @OneToOne(mappedBy = "collaborateur", cascade = CascadeType.ALL)
     @JsonIgnore
     private Collaborateur collaborateur;
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private EntretienRh entretienRh;
     @OneToOne(mappedBy = "manager" , cascade = CascadeType.ALL)
     @JsonIgnore
     private ManagerService managerService;

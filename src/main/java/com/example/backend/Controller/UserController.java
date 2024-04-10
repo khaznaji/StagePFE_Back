@@ -235,6 +235,15 @@ public class UserController {
 
         return ResponseEntity.ok(managerServices);
     }
+    @GetMapping("/managerRh")
+    public ResponseEntity<List<User>> getManagerRh() {
+        List<User> managerServices = userService.getUsersByRole(Role.ManagerRh);
+        if (managerServices.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(managerServices);
+    }
     @DeleteMapping("/deleteAccount/{id}")
     @ResponseBody
     public void deleteAccount(@PathVariable("id")Long id){
