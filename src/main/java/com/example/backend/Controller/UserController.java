@@ -1,10 +1,7 @@
 package com.example.backend.Controller;
 import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
-import com.example.backend.Repository.CollaborateurRepository;
-import com.example.backend.Repository.ManagerServiceRepository;
-import com.example.backend.Repository.PosteRepository;
-import com.example.backend.Repository.UserRepository;
+import com.example.backend.Repository.*;
 import com.example.backend.Security.jwt.JwtUtils;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Security.verificationCode.CodeVerification;
@@ -45,6 +42,8 @@ public class UserController {
     private UserService userService;
     @Autowired
     private ManagerServiceRepository managerServiceRepository;
+    @Autowired
+    private FormateurRepository formateurRepository;
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -98,6 +97,47 @@ public class UserController {
             managerServiceRepository.save(request);
 
             // Call your service method to register the manager service
+            CodeVerification verificationCode = codeVerificationService.createToken(manager);
+            String resetLink = "http://localhost:4200/activate-account?token=" + verificationCode.getToken();
+            emailService.sendWelcomeEmail(manager.getEmail(),manager.getNom(), resetLink, verificationCode.getActivationCode());
+
+            return new ResponseEntity<>(manager, HttpStatus.CREATED);
+        } catch (EmailAlreadyExistsException | MatriculeAlreadyExistsException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+    @PostMapping("/registerFormateur")
+    public ResponseEntity<?> registerFormateur(
+            @RequestParam("nom") String nom,
+            @RequestParam("prenom") String prenom,
+            @RequestParam("numtel") int numtel,
+            @RequestParam("email") String email,
+            @RequestParam("gender") Gender gender,
+            @RequestParam(value = "image", required = false) MultipartFile image ,
+            @RequestParam("specialite") String specialite,
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree
+            ) {
+        try {
+
+            User manager = new User();
+            manager.setNom(nom);
+            manager.setPrenom(prenom);
+            manager.setNumtel(numtel);
+            manager.setRole(Role.ManagerService);
+            manager.setEmail(email);
+            manager.setPassword(passwordEncoder.encode("SopraHR2024"));
+            manager.setDate(LocalDateTime.now());
+            manager.setActivated(false);
+            manager.setGender(gender);
+            manager.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
+            User registeredManager = userRepository.save(manager);
+
+            Formateur request = new Formateur();
+            request.setFomarteur(registeredManager);
+            request.setDateEntree(dateEntree);
+            request.setSpecialite(specialite);
+            formateurRepository.save(request);
+
             CodeVerification verificationCode = codeVerificationService.createToken(manager);
             String resetLink = "http://localhost:4200/activate-account?token=" + verificationCode.getToken();
             emailService.sendWelcomeEmail(manager.getEmail(),manager.getNom(), resetLink, verificationCode.getActivationCode());

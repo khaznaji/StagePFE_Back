@@ -30,7 +30,7 @@ public class EntretienRh {
 
     @Enumerated(EnumType.STRING)
     private EtatEntretien etatEntretien;
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 

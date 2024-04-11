@@ -42,10 +42,11 @@ public  class User {
     private boolean isActivated;
     @OneToOne(mappedBy = "collaborateur", cascade = CascadeType.ALL)
     @JsonIgnore
-    private Collaborateur collaborateur;
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Collaborateur collaborateur;    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL) // Un utilisateur peut avoir plusieurs entretiens
     @JsonIgnore
-    private EntretienRh entretienRh;
+    private Set<EntretienRh> entretiens = new HashSet<>(); // Utilisez Set pour éviter les doublons
+
     @OneToOne(mappedBy = "manager" , cascade = CascadeType.ALL)
     @JsonIgnore
     private ManagerService managerService;

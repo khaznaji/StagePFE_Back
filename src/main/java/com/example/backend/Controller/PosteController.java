@@ -527,7 +527,40 @@ public class PosteController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+    @GetMapping("/getCandidatsByPosteIdEnAttenteEntretienRh/{postId}")
+    public ResponseEntity<List<Map<String, String>>> getCandidatsByPosteIdEnAttenteEntretienRh(@PathVariable Long postId) {
+        Optional<Poste> optionalPoste = posteRepository.findById(postId);
 
+        if (optionalPoste.isPresent()) {
+            Poste poste = optionalPoste.get();
+
+            // Récupérer toutes les candidatures associées à ce poste
+            List<Candidature> candidatures = candidatureRepository.findByPoste(poste);
+
+            // Extraire les informations des collaborateurs (nom, prénom, email) de chaque candidature
+            List<Map<String, String>> candidatsInfo = new ArrayList<>();
+            for (Candidature candidature : candidatures) {
+                if (candidature.getEtat().equals(EtatPostulation.EN_ATTENTE_ENTRETIEN_RH)) { // Filtrer par l'état de la candidature
+                    Collaborateur collaborateur = candidature.getCollaborateur();
+                    User user = collaborateur.getCollaborateur();
+
+                    Map<String, String> candidatInfo = new HashMap<>();
+                    candidatInfo.put("id", candidature.getId().toString()); // Ajouter l'ID du candidat
+                    candidatInfo.put("etat", candidature.getEtat().toString());
+
+                    candidatInfo.put("nom", user.getNom());
+                    candidatInfo.put("prenom", user.getPrenom());
+                    candidatInfo.put("email", user.getEmail());
+
+                    candidatsInfo.add(candidatInfo);
+                }
+            }
+
+            return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
     @GetMapping("/demandesEnCours")
     public ResponseEntity<List<Poste>> getDemandesEnCours() {
         List<Poste> demandesEnCours = posteRepository.findByPoste(EtatPoste.En_cours);
@@ -734,7 +767,36 @@ public class PosteController {
         }
         return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
     }
-
+    @GetMapping("/CandidatsEntretienRh/{postId}")
+    public ResponseEntity<List<Map<String, String>>> CandidatsEntretienRh(@PathVariable Long postId) {
+        List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);
+        List<Map<String, String>> candidatsInfo = new ArrayList<>();
+        for (Candidature candidature : candidatures) {
+            EtatPostulation etat = candidature.getEtat();
+            if (etat == EtatPostulation.Entretien_Rh) {
+                Collaborateur collaborateur = candidature.getCollaborateur();
+                User user = collaborateur.getCollaborateur();
+                // Récupérer les informations d'entretien associées à la candidature
+                Optional<Entretien> entretienOptional = entretienService.getEntretienByCandidatureId(candidature.getId());
+                if (entretienOptional.isPresent()) {
+                    Entretien entretien = entretienOptional.get();
+                    Map<String, String> candidatInfo = new HashMap<>();
+                    candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
+                    candidatInfo.put("etat", etat.toString());
+                    candidatInfo.put("nom", user.getNom());
+                    candidatInfo.put("image", user.getImage());
+                    candidatInfo.put("score", String.valueOf(candidature.getScore())); // Convert int to String
+                    candidatInfo.put("prenom", user.getPrenom());
+                    candidatInfo.put("email", user.getEmail());
+                    candidatInfo.put("collaborateur_id", collaborateur.getId().toString()); // ID du collaborateur
+                    candidatInfo.put("poste_id", candidature.getPoste().getId().toString()); // ID du poste
+                    candidatInfo.put("note", String.valueOf(entretien.getNote())); // Convertir int en String
+                    candidatsInfo.add(candidatInfo);
+                }
+            }
+        }
+        return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
+    }
 
     @PutMapping("/modifierEtat/{collaborateurId}/{posteId}/{newState}")
     public Candidature modifierEtat(
@@ -873,6 +935,10 @@ public class PosteController {
         }
     }
 
+    @PutMapping("/candidatures/accepter")
+    public void accepterCandidatures(@RequestBody List<Long> candidatureIds) {
+        candidatureService.accepterCandidatures(candidatureIds);
+    }
 
 
 }

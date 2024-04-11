@@ -3,10 +3,13 @@ package com.example.backend.Service;
 import com.example.backend.Entity.*;
 import com.example.backend.Repository.CandidatureRepository;
 import com.example.backend.Repository.CollaborateurRepository;
+import com.example.backend.Repository.ManagerServiceRepository;
+import com.example.backend.Repository.PosteRepository;
 import com.example.backend.exception.CandidatureNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,5 +59,34 @@ public void updateCandidaturesToEnAttente(List<Long> candidatureIds) {
           candidatureRepository.save(candidature);
       }
   }
+  @Autowired
+    PosteRepository posteRepository;
+    @Autowired
+    ManagerServiceRepository managerServiceRepository;
+    @Transactional
+    public void accepterCandidatures(List<Long> candidatureIds) {
+        for (Long candidatureId : candidatureIds) {
+            Candidature candidature = candidatureRepository.findById(candidatureId)
+                    .orElseThrow(() -> new IllegalArgumentException("Candidature non trouvée avec l'ID : " + candidatureId));
+
+            // Mettre à jour l'état de la candidature à "Accepté"
+            candidature.setEtat(EtatPostulation.ACCEPTEE);
+
+            Poste poste = candidature.getPoste();
+            if (poste != null) {
+                Collaborateur collaborateur = candidature.getCollaborateur();
+                if (collaborateur != null) {
+                    // Mettre à jour le titre du poste du collaborateur avec le titre du poste de la candidature
+                    collaborateur.setPoste(poste.getTitre());
+
+                    // Mettre à jour le managerService_id du collaborateur avec le managerService_id du poste
+                    collaborateur.setManagerService(poste.getManagerService());
+
+                    collaborateurRepository.save(collaborateur);
+                }
+            }
+            candidatureRepository.save(candidature);
+        }
+    }
 
 }
