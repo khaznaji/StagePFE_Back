@@ -106,47 +106,7 @@ public class UserController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
-    @PostMapping("/registerFormateur")
-    public ResponseEntity<?> registerFormateur(
-            @RequestParam("nom") String nom,
-            @RequestParam("prenom") String prenom,
-            @RequestParam("numtel") int numtel,
-            @RequestParam("email") String email,
-            @RequestParam("gender") Gender gender,
-            @RequestParam(value = "image", required = false) MultipartFile image ,
-            @RequestParam("specialite") String specialite,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree
-            ) {
-        try {
 
-            User manager = new User();
-            manager.setNom(nom);
-            manager.setPrenom(prenom);
-            manager.setNumtel(numtel);
-            manager.setRole(Role.ManagerService);
-            manager.setEmail(email);
-            manager.setPassword(passwordEncoder.encode("SopraHR2024"));
-            manager.setDate(LocalDateTime.now());
-            manager.setActivated(false);
-            manager.setGender(gender);
-            manager.setImage(gender == Gender.Femme ? "avatar/femme.png" : "avatar/homme.png");
-            User registeredManager = userRepository.save(manager);
-
-            Formateur request = new Formateur();
-            request.setFomarteur(registeredManager);
-            request.setDateEntree(dateEntree);
-            request.setSpecialite(specialite);
-            formateurRepository.save(request);
-
-            CodeVerification verificationCode = codeVerificationService.createToken(manager);
-            String resetLink = "http://localhost:4200/activate-account?token=" + verificationCode.getToken();
-            emailService.sendWelcomeEmail(manager.getEmail(),manager.getNom(), resetLink, verificationCode.getActivationCode());
-
-            return new ResponseEntity<>(manager, HttpStatus.CREATED);
-        } catch (EmailAlreadyExistsException | MatriculeAlreadyExistsException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
 
     @GetMapping("/countCollaborateurs")
     public long countCollaborateurs() {
@@ -292,6 +252,16 @@ public class UserController {
     @GetMapping("/collaborateur")
     public ResponseEntity<List<User>> getCollaborateur() {
         List<User> managerServices = userService.getUsersByRole(Role.Collaborateur);
+
+        if (managerServices.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(managerServices);
+    }
+        @GetMapping("/formateur")
+        public ResponseEntity<List<User>> getFormateur() {
+        List<User> managerServices = userService.getUsersByRole(Role.Formateur);
 
         if (managerServices.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
