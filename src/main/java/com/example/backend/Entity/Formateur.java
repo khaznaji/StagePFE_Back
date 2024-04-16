@@ -25,5 +25,7 @@ public class Formateur {
     private String specialite ;
     @DateTimeFormat(pattern = "dd/MM/yyyy")
     private LocalDate dateEntree;
-
+    @OneToOne()
+    @JsonIgnore
+    private Formation formation;
 }

@@ -9,7 +9,6 @@ import com.example.backend.Repository.PosteRepository;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.CandidatureService;
 import com.example.backend.Service.EntretienService;
-import com.example.backend.Service.PosteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -122,6 +118,7 @@ public class PosteController {
             return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);
         }
     }
+
     @PostMapping("/postuler/{postId}")
     public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long postId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -141,9 +138,7 @@ public class PosteController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
         }
 
-        // Vérifiez si le collaborateur a au moins 3 compétences qui correspondent aux compétences requises pour le poste
 
-        // Créez une nouvelle instance de Candidature
         Candidature candidature = new Candidature();
         candidature.setCollaborateur(collaborateur);
         candidature.setPoste(poste);

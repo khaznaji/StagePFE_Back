@@ -57,5 +57,7 @@ public class Collaborateur {
     private List<Evaluation> evaluations;
 
     private String resume ;
+    @OneToMany(mappedBy = "collaborateur")
+    private Set<ParticipationFormation> participations;
 
 }
