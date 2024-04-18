@@ -12,11 +12,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
+import java.util.List;
+import java.util.stream.Collectors;
 
+@Controller
+@RestController
+@CrossOrigin(origins = "*")
+@RequestMapping("/api/ParticipationFormation")
 public class ParticipationFormationController {
     @Autowired
     CollaborateurRepository collaborateurRepository;
@@ -27,13 +33,13 @@ public class ParticipationFormationController {
 
     @PostMapping("/inscription/{formationId}")
     public ResponseEntity<?> inscriptionFormation(@PathVariable Long formationId) {
-        // Obtenez l'authentification actuelle pour récupérer les détails du collaborateur connecté
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId(); // ID de l'utilisateur
 
-        // Obtenez le collaborateur connecté à partir des détails de l'utilisateur
-        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userDetails.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userDetails.getId()));
+        // Recherche du collaborateur correspondant à l'utilisateur
+        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userId));
 
         // Vérifiez si la formation existe
         Formation formation = formationRepository.findById(formationId)
@@ -49,6 +55,27 @@ public class ParticipationFormationController {
         participationFormationRepository.save(participation);
 
         return ResponseEntity.ok("Inscription à la formation avec l'état "  + " réussie");
+    }
+    @GetMapping("/mesFormations")
+    public ResponseEntity<List<Formation>> getMesFormations() {
+        // Récupérez l'authentification actuelle pour obtenir les détails du collaborateur connecté
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId(); // ID de l'utilisateur
+
+        // Recherche du collaborateur correspondant à l'utilisateur
+        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userId));
+
+        // Récupérez les participations à la formation pour le collaborateur connecté
+        List<ParticipationFormation> participations = participationFormationRepository.findByCollaborateur(collaborateur);
+
+        // Récupérez les formations correspondantes aux participations
+        List<Formation> mesFormations = participations.stream()
+                .map(ParticipationFormation::getFormation)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(mesFormations);
     }
 
 
