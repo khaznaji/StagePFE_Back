@@ -131,8 +131,7 @@ public class CertificatController {
                         fo.close();
                         System.out.println("Done");
                         String certificateLink = "http://localhost:4200/student/profile/" + user.getId();
-               /*         sendEmailWithAttachment(user.getCollaborateur().getEmail(), pdfname, fullName, certificateLink);
-*/
+                      sendEmailWithAttachment(user.getCollaborateur().getEmail(), pdfname, fullName, certificateLink);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -174,7 +173,7 @@ public class CertificatController {
 
 
 
-  /*  private void sendEmailWithAttachment(String toEmail, String attachmentPath, String fullName, String certificateLink) throws MessagingException {
+   private void sendEmailWithAttachment(String toEmail, String attachmentPath, String fullName, String certificateLink) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
@@ -201,7 +200,7 @@ public class CertificatController {
         } catch (MessagingException e) {
             e.printStackTrace();
         }
-   }*/
+   }
 
 
     private static void FixText (String text, String fontfile, String fontname,float x, int y, PdfWriter writer,
