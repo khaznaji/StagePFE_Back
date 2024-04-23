@@ -59,5 +59,10 @@ public class Collaborateur {
     private String resume ;
     @OneToMany(mappedBy = "collaborateur")
     private Set<ParticipationFormation> participations;
+    @OneToMany(mappedBy = "collaborateur")
+    private List<Certificat> certificats;
+
+    @ManyToMany(mappedBy = "collaborateurs")
+    private List<Groups> groups;
 
 }

@@ -298,20 +298,22 @@ public class PosteController {
         Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID de l'utilisateur : " + userId));
 
-        // Récupérer les postes auxquels le collaborateur a postulé
-        List<Candidature> postulesParCollaborateur = collaborateur.getCandidatures();
+        // Récupérer les IDs des postes auxquels le collaborateur a postulé
+        Set<Long> appliedPosteIds = collaborateur.getCandidatures().stream()
+                .map(candidature -> candidature.getPoste().getId())
+                .collect(Collectors.toSet());
 
         // Récupérer tous les postes approuvés
         List<Poste> approvedPostes = posteRepository.findByPoste(EtatPoste.Publie);
 
-        // Filtrer les postes pour ne    garder que ceux auxquels le collaborateur n'a pas postulé
+        // Filtrer les postes pour ne garder que ceux auxquels le collaborateur n'a pas postulé
         List<Poste> postesNonPostules = approvedPostes.stream()
-                .filter(poste -> postulesParCollaborateur.stream()
-                        .noneMatch(candidature -> candidature.getPoste().equals(poste)))
+                .filter(poste -> !appliedPosteIds.contains(poste.getId()))
                 .collect(Collectors.toList());
 
         return new ResponseEntity<>(postesNonPostules, HttpStatus.OK);
     }
+
 
     @GetMapping("/postulations")
     public ResponseEntity<List<Map<String, Object>>> getPostulations() {
@@ -736,15 +738,23 @@ public class PosteController {
     public ResponseEntity<List<Map<String, String>>> CandidatsVersEntretienRh(@PathVariable Long postId) {
         List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);
         List<Map<String, String>> candidatsInfo = new ArrayList<>();
+
         for (Candidature candidature : candidatures) {
             EtatPostulation etat = candidature.getEtat();
+
+            // Vérifier si l'état de la candidature est "Entretien"
             if (etat == EtatPostulation.Entretien) {
                 Collaborateur collaborateur = candidature.getCollaborateur();
                 User user = collaborateur.getCollaborateur();
+
                 // Récupérer les informations d'entretien associées à la candidature
                 Optional<Entretien> entretienOptional = entretienService.getEntretienByCandidatureId(candidature.getId());
+
+                // Vérifier si un entretien est associé à la candidature
                 if (entretienOptional.isPresent()) {
                     Entretien entretien = entretienOptional.get();
+
+                    // Créer une nouvelle carte d'informations de candidat
                     Map<String, String> candidatInfo = new HashMap<>();
                     candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
                     candidatInfo.put("etat", etat.toString());
@@ -756,12 +766,16 @@ public class PosteController {
                     candidatInfo.put("collaborateur_id", collaborateur.getId().toString()); // ID du collaborateur
                     candidatInfo.put("poste_id", candidature.getPoste().getId().toString()); // ID du poste
                     candidatInfo.put("note", String.valueOf(entretien.getNote())); // Convertir int en String
+
+                    // Ajouter les informations du candidat à la liste
                     candidatsInfo.add(candidatInfo);
                 }
             }
         }
+
         return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
     }
+
     @GetMapping("/CandidatsEntretienRh/{postId}")
     public ResponseEntity<List<Map<String, String>>> CandidatsEntretienRh(@PathVariable Long postId) {
         List<Candidature> candidatures = candidatureService.getCandidaturesByPost(postId);

@@ -14,4 +14,5 @@ public interface PosteRepository extends JpaRepository<Poste,Long> {
     List<Poste> findByPoste(EtatPoste etat);
 
 
+
 }

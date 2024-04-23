@@ -46,4 +46,10 @@ public class CollaborateurService implements ICollaborateurService {
         return collaborateur;
     }
 
+
+
+    public Collaborateur findById(Long id) {
+        return collaborateurRepository.findById(id).orElse(null);
+    }
+
 }

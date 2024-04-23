@@ -8,13 +8,14 @@ import lombok.Setter;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Formation {
+public class    Formation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id ;
@@ -36,4 +37,9 @@ public class Formation {
     private String formateurName;
     @Transient // Indique à JPA de ne pas mapper ce champ à la base de données
     private String formateurImage;
+    @OneToMany(mappedBy = "formation")
+    @JsonIgnore
+    private List<ParticipationFormation> participations;
+
+
 }

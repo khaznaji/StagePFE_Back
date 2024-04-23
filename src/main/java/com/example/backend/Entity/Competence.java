@@ -20,22 +20,21 @@
         @Id
         @GeneratedValue(strategy = GenerationType.IDENTITY)
         private Long id;
-    
         private String nom;
+
         @Enumerated(EnumType.STRING)
         private Domaine domaine;
     
         @ManyToMany(mappedBy = "competences")
         @JsonIgnore
         @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    
         private List<ManagerService> managers ;
     
         @ManyToMany(mappedBy = "competences")
         @JsonIgnore
         @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    
         private List<Collaborateur> collaborateurs ;
+
         @OneToMany(mappedBy = "competence")
         @JsonIgnore
         private List<Evaluation> evaluations;

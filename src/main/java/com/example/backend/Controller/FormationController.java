@@ -4,6 +4,7 @@ import com.example.backend.Entity.*;
 import com.example.backend.Repository.CollaborateurRepository;
 import com.example.backend.Repository.FormateurRepository;
 import com.example.backend.Repository.FormationRepository;
+import com.example.backend.Repository.ParticipationFormationRepository;
 import com.example.backend.Security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,10 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -203,6 +201,22 @@ public class FormationController {
             return ResponseEntity.notFound().build();
         }
     }
+    @GetMapping("/allAvailable")
+    public ResponseEntity<List<Formation>> getAllAvailableFormations() {
+        List<Formation> formations = formationRepository.findAll().stream()
+                .filter(Formation::isDisponibilite) // Filtrer les formations où disponibilite est vrai
+                .peek(formation -> {
+                    Formateur formateur = formation.getFormateur();
+                    if (formateur != null) {
+                        formation.setFormateurName(formateur.getFomarteur().getNom() + " " + formateur.getFomarteur().getPrenom() ); // Assurez-vous d'avoir une méthode getFormateurName() dans la classe Formateur
+                        formation.setFormateurImage(formateur.getFomarteur().getImage()  ); // Assurez-vous d'avoir une méthode getFormateurName() dans la classe Formateur
+                    }
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(formations);
+    }
+
+
 
 
     @GetMapping("/mesformations")
@@ -268,7 +282,8 @@ public class FormationController {
             return ResponseEntity.notFound().build();
         }
     }
-
+@Autowired
+    ParticipationFormationRepository participationFormationRepository ;
     @GetMapping("/formationsCollaborateur")
     public ResponseEntity<List<Formation>> formationsCollaborateur() {
         // Obtenez l'authentification actuelle pour récupérer l'utilisateur connecté
@@ -286,6 +301,16 @@ public class FormationController {
             formations = formationRepository.findAll(); // Si le département du collaborateur n'est pas défini, récupérez toutes les formations
         }
 
+        // Exclure les formations auxquelles le collaborateur a déjà postulé
+        List<ParticipationFormation> participations = participationFormationRepository.findByCollaborateur(collaborateur);
+        Set<Long> formationIds = participations.stream()
+                .map(participation -> participation.getFormation().getId())
+                .collect(Collectors.toSet());
+
+        formations = formations.stream()
+                .filter(formation -> !formationIds.contains(formation.getId()))
+                .collect(Collectors.toList());
+
         // Parcourez chaque formation et récupérez le nom et le prénom du formateur associé
         for (Formation formation : formations) {
             Formateur formateur = formation.getFormateur(); // Récupérez l'objet Formateur associé à la formation
@@ -298,6 +323,7 @@ public class FormationController {
 
         return ResponseEntity.ok(formations);
     }
+
 
 
 
