@@ -1,5 +1,6 @@
 package com.example.backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -19,7 +20,10 @@ public class SessionFormation {
     @ManyToOne
     @JoinColumn(name = "group_id")
     private Groups group;
-
+    @ManyToOne
+    @JoinColumn(name = "formation_id")
+    @JsonIgnore
+    private Formation formation;
     @Column(name = "date_debut")
     private String dateDebut;
 
@@ -29,7 +33,5 @@ public class SessionFormation {
     @Column(name = "room_id")
     private String roomId;
 
-    @Enumerated(EnumType.STRING)
-        private ModaliteSession modaliteSession;
 
 }

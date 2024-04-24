@@ -60,9 +60,11 @@ public class Collaborateur {
     @OneToMany(mappedBy = "collaborateur")
     private Set<ParticipationFormation> participations;
     @OneToMany(mappedBy = "collaborateur")
+    @JsonIgnore
     private List<Certificat> certificats;
 
     @ManyToMany(mappedBy = "collaborateurs")
+    @JsonIgnore
     private List<Groups> groups;
 
 }

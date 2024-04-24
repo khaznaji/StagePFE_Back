@@ -67,6 +67,21 @@ public class GroupeController {
     }
 
 
+    @GetMapping("/groupesParFormation/{formationId}")
+    public ResponseEntity<List<Groups>> getGroupesByFormation(@PathVariable Long formationId) {
+        try {
+            Optional<Formation> formationData = formationRepository.findById(formationId);
+            if (formationData.isPresent()) {
+                Formation formation = formationData.get();
+                List<Groups> groupes = groupsRepository.findByFormation(formation);
+                return new ResponseEntity<>(groupes, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
 

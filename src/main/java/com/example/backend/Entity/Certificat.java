@@ -1,5 +1,6 @@
 package com.example.backend.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -20,6 +21,7 @@ public class Certificat {
     private LocalDateTime date = LocalDateTime.now();
     @ManyToOne
     @JoinColumn(name = "collaborateur_id")
+    @JsonIgnore
     private Collaborateur collaborateur;
     private String periode;
     private String month;

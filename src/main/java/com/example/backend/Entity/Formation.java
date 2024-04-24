@@ -33,13 +33,18 @@ public class    Formation {
     @JoinColumn(name = "formateur_id")
     @JsonIgnore
     private Formateur formateur;
-    @Transient // Indique à JPA de ne pas mapper ce champ à la base de données
-    private String formateurName;
-    @Transient // Indique à JPA de ne pas mapper ce champ à la base de données
-    private String formateurImage;
+
     @OneToMany(mappedBy = "formation")
     @JsonIgnore
     private List<ParticipationFormation> participations;
+    @OneToMany(mappedBy = "formation", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<SessionFormation> sessions;
+
+    @Transient
+    private String formateurName;
+    @Transient
+    private String formateurImage;
 
 
 }
