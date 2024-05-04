@@ -1,10 +1,7 @@
 package com.example.backend.Controller;
 
 
-import com.example.backend.Entity.Certificat;
-import com.example.backend.Entity.Collaborateur;
-import com.example.backend.Entity.Formation;
-import com.example.backend.Entity.Groups;
+import com.example.backend.Entity.*;
 import com.example.backend.Repository.CertificatRepository;
 import com.example.backend.Repository.CollaborateurRepository;
 import com.example.backend.Repository.GroupsRespository;
@@ -33,8 +30,10 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.TextStyle;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,12 +56,13 @@ public class CertificatController {
     @Autowired
     private CertificatService certificateService;
     @PostMapping("/Generer/{idgroupe}")
-    public void genererCertificatForGroup(@PathVariable Long idgroupe, @RequestParam String month, @RequestParam String periode) throws RuntimeException, IOException, DocumentException {
+    public void genererCertificatForGroup(@PathVariable Long idgroupe, @RequestParam String month) throws RuntimeException, IOException, DocumentException {
         try {
             Groups group = groupsRepository.findById(idgroupe).orElseThrow(() -> new RuntimeException("Groupe introuvable"));
-
             Formation formation = group.getFormation();
             String nom_formation = formation.getTitle();
+            int dureeFormation = formation.getDuree(); // Obtenez la durée de la formation
+            String dureeFormationStr = String.valueOf(dureeFormation) + " Heures"; // Convertissez la durée en chaîne de caractères avec " heure" ajouté à la fin
 
             List<Collaborateur> users = group.getCollaborateurs();
 
@@ -75,8 +75,8 @@ public class CertificatController {
             }
 
             for (Collaborateur user : users) {
-                // Vérifier si l'utilisateur a déjà un certificat
-                if (user.getCertificats().isEmpty()) {
+
+
                     String fullName = user.getCollaborateur().getNom() + " " + user.getCollaborateur().getPrenom() ;
 
                     String relativePath = "Certifications/" + nom_formation + " " + month + "/" + "_" + user.getId() + "_" + user.getCollaborateur().getNom() + "_" + user.getCollaborateur().getPrenom() + ".pdf";
@@ -92,9 +92,10 @@ public class CertificatController {
 
                     Certificat certificat = new Certificat();
                     certificat.setDate(LocalDateTime.now());
-                    certificat.setPeriode(periode);
+                    certificat.setPeriode(dureeFormationStr);
                     certificat.setMonth(month);
                     group.setCertificatesGenerated(true);
+                    group.setEtat(Etat.Certifie);
 
                     certificat.setCollaborateur(user); // Set the relationship between Certificat and User
 
@@ -114,7 +115,7 @@ public class CertificatController {
                         float pos = (document.getPageSize().getWidth() / 2) - (fullName.length() * 18 / 2);
                         FixText(fullName, "savoyeplain.ttf", "Savoye", pos, 240, writer, 60);
 
-                        certificate_footer(writer, fullName, periode, nom_formation, month);
+                        certificate_footer(writer, fullName, dureeFormationStr, nom_formation, month);
 
                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
                         String formattedDate = certificat.getDate().format(formatter);
@@ -131,26 +132,34 @@ public class CertificatController {
                         fo.close();
                         System.out.println("Done");
                         String certificateLink = "http://localhost:4200/student/profile/" + user.getId();
-                      sendEmailWithAttachment(user.getCollaborateur().getEmail(), pdfname, fullName, certificateLink);
+
+                        certificat.setPath(relativePath);
+                        certificat.setUserOrGroupId(group.getId()); // ou certificat.setUserOrGroupId(group.getId());
+
+                        certificatRepository.save(certificat);
+                        System.out.print(nom_formation);
+                        sendEmailWithAttachment(user.getCollaborateur().getEmail(), pdfname, fullName, certificateLink);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
                     // Set the relationship between Certificat and User
-                    certificat.setPath(relativePath);
-                    certificat.setUserOrGroupId(group.getId()); // ou certificat.setUserOrGroupId(group.getId());
 
-                    certificatRepository.save(certificat);
-                    System.out.print(nom_formation);
-                } else {
-                    System.out.println("Certificat already exists for user: " + user.getCollaborateur().getNom() + " " + user.getCollaborateur().getPrenom());
-                }
+
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    public String obtenirMois(String date) {
+        // Analyse de la date dans le format donné
+        LocalDate localDate = LocalDate.parse(date, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
 
+        // Récupérer le nom du mois à partir de la date
+        String mois = localDate.getMonth().getDisplayName(TextStyle.FULL, Locale.FRANCE);
+
+        return mois;
+    }
 
 
     /***********user*********/
@@ -321,9 +330,11 @@ public class CertificatController {
     }
     /***hedhi**/
     @DeleteMapping("/Supprimer/{idgroupe}")
-    public ResponseEntity<String> supprimerCertificatsForGroup(@PathVariable Long idgroupe) {
+    public ResponseEntity<Map<String, String>>  supprimerCertificatsForGroup(@PathVariable Long idgroupe) {
         try {
             Groups group = groupsRepository.findById(idgroupe).orElseThrow(() -> new RuntimeException("Groupe introuvable"));
+            group.setEtat(Etat.Termine);
+            groupsRepository.save(group);
             Formation formation = group.getFormation();
             String nom_formation = formation.getTitle();
             List<Collaborateur> users = group.getCollaborateurs(); // Assuming "getEtudiants()" returns the list of users associated with the group
@@ -342,15 +353,22 @@ public class CertificatController {
                 }
             }
 
-            return ResponseEntity.ok("Certificats deleted successfully for the group: " + idgroupe);
-        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Certificats deleted successfully for the group: " );
+
+            // Renvoyez la map en tant que ResponseEntity
+            return ResponseEntity.ok(response);        } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting certificats.");
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "An error occurred while deleting certificats.");
+
+            // Renvoyez une réponse avec un statut d'erreur interne du serveur (Internal Server Error) et la map d'erreur
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
     /**** hedhi ****/
     @PutMapping("/ModifierCertificats/{idgroupe}")
-    public ResponseEntity<String> modifierCertificatsForGroup(@PathVariable Long idgroupe, @RequestParam String periode, @RequestParam String month) {
+    public  ResponseEntity<Map<String, String>> modifierCertificatsForGroup(@PathVariable Long idgroupe,  @RequestParam String month) {
         try {
             Groups group = groupsRepository.findById(idgroupe).orElseThrow(() -> new RuntimeException("Groupe introuvable"));
 
@@ -364,6 +382,8 @@ public class CertificatController {
                 String fullName = user.getCollaborateur().getNom() + " " + user.getCollaborateur().getPrenom();
                 Formation formation = group.getFormation();
                 String nom_formation = formation.getTitle();
+                int dureeFormation = formation.getDuree(); // Obtenez la durée de la formation
+                String dureeFormationStr = String.valueOf(dureeFormation) + " Heures"; // Convertissez la durée en chaîne de caractères avec " heure" ajouté à la fin
 
                 String relativePath = "Certifications/" + nom_formation + " " + month + "/" + "_" + user.getId() + "_" + user.getCollaborateur().getNom() + "_" + user.getCollaborateur().getPrenom() + ".pdf";
                 String pdfname = "C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\" + relativePath;
@@ -375,7 +395,7 @@ public class CertificatController {
                     String newPath = oldPath.replace(certificat.getMonth().trim(), month.trim());
 
                     // Update periode and month in the certificate
-                    certificat.setPeriode(periode);
+                    certificat.setPeriode(dureeFormationStr);
 
                     // Check if the new month is different from the existing month
                     if (!month.equals(certificat.getMonth())) {
@@ -421,7 +441,7 @@ public class CertificatController {
                         float pos = (document.getPageSize().getWidth() / 2) - (fullName.length() * 18 / 2);
                         FixText(fullName, "savoyeplain.ttf", "Savoye", pos, 240, writer, 60);
 
-                        certificate_footer(writer, fullName, periode, nom_formation, month);
+                        certificate_footer(writer, fullName, dureeFormationStr, nom_formation, month);
 
                         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
                         String formattedDate = certificat.getDate().format(formatter);
@@ -447,10 +467,17 @@ public class CertificatController {
                 }
             }
 
-            return ResponseEntity.ok("Certificats updated successfully for the group: " + idgroupe);
-        } catch (Exception e) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Certificats updated successfully for the group: " );
+
+            // Renvoyez la map en tant que ResponseEntity
+            return ResponseEntity.ok(response);          } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while updating certificats.");
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", "An error occurred while deleting certificats.");
+
+            // Renvoyez une réponse avec un statut d'erreur interne du serveur (Internal Server Error) et la map d'erreur
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 

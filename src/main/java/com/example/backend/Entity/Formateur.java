@@ -9,6 +9,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -28,4 +30,7 @@ public class Formateur {
     @OneToOne()
     @JsonIgnore
     private Formation formation;
+    @OneToMany(mappedBy = "formateur")
+    @JsonIgnore
+    private List<Groups> groups;
 }

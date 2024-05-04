@@ -4,5 +4,6 @@ public enum EtatParticipation {
     EN_ATTENTE,
     ACCEPTE,
     CONFIRME ,
+    AFFECTE ,
     REFUSE;
 }

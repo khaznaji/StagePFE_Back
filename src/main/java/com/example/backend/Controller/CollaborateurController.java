@@ -255,9 +255,15 @@ public class CollaborateurController {
             collaborateurInfo.put("prenom", user.getPrenom());
             collaborateurInfo.put("poste", collaborateur.getPoste());
             collaborateurInfo.put("dateEntree", collaborateur.getDateEntree());
+        String managerName = collaborateur.getManagerService().getManager().getNom();
+        String managerPrenom = collaborateur.getManagerService().getManager().getPrenom();
+        String managerImage = collaborateur.getManagerService().getManager().getImage();
 
-            collaborateurInfo.put("managerName", collaborateur.getCollaborateur().getNom());
-            collaborateurInfo.put("managerPrenom", collaborateur.getCollaborateur().getPrenom()); // Assurez-vous que ManagerService a un nom
+// Maintenant vous pouvez les utiliser comme vous le souhaitez
+        collaborateurInfo.put("managerName", managerName);
+        collaborateurInfo.put("managerPrenom", managerPrenom);
+        collaborateurInfo.put("managerImage", managerImage);
+
 // Assurez-vous que ManagerService a un nom
             collaborateurInfo.put("departement", collaborateur.getDepartment().name()); // Assurez-vous que Departement est un enum
             collaborateurInfo.put("bio", collaborateur.getBio());

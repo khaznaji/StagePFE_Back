@@ -46,4 +46,10 @@
         @OneToMany(mappedBy = "managerService")
         @JsonIgnore
         private List<Poste> postes;
+        @OneToMany(mappedBy = "managerService")
+        private List<BilanAnnuel> bilansAnnuels;
+        @OneToMany(mappedBy = "managerService")
+        @JsonIgnore
+
+        private List<Entretien> entretiens;
     }

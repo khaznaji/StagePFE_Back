@@ -6,6 +6,7 @@ import com.example.backend.Repository.ManagerServiceRepository;
 import com.example.backend.Repository.UserRepository;
 import com.example.backend.Security.verificationCode.CodeVerification;
 import com.example.backend.Security.verificationCode.CodeVerificationServiceImpl;
+import com.example.backend.Service.ManagerServiceService;
 import com.example.backend.exception.EmailAlreadyExistsException;
 import com.example.backend.exception.MatriculeAlreadyExistsException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+
 @Controller
 @RestController
 @CrossOrigin(origins = "*")
@@ -29,6 +32,8 @@ public class ManagerServiceController {
     private PasswordEncoder passwordEncoder;
     @Autowired
     private ManagerServiceRepository managerServiceRepository;
+    @Autowired
+    private ManagerServiceService managerServiceService;
     @Autowired
     private UserRepository userRepository;
     @Autowired
@@ -82,4 +87,11 @@ public class ManagerServiceController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/members")
+    public List<List<Map<String, Object>>> getMembersOfAuthenticatedManagerService() {
+        return managerServiceService.getMembers();
+    }
+
+
 }

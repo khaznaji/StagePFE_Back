@@ -146,7 +146,7 @@ public class ParticipationFormationController {
                 Map<String, Object> formationMap = new HashMap<>();
                 Collaborateur collaborateur = participation.getCollaborateur();
                 formationMap.put("nom", collaborateur.getCollaborateur().getNom());
-                formationMap.put("idC", collaborateur.getCollaborateur().getId());
+                formationMap.put("idC", collaborateur.getId());
                 formationMap.put("prenom", collaborateur.getCollaborateur().getPrenom());
                 formationMap.put("image", collaborateur.getCollaborateur().getImage());
                 formationMap.put("poste", collaborateur.getPoste());

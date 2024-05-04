@@ -4,15 +4,21 @@ import com.example.backend.Entity.Collaborateur;
 import com.example.backend.Entity.Formateur;
 import com.example.backend.Entity.ModaliteSession;
 import com.example.backend.Entity.SessionFormation;
+import com.example.backend.Repository.CollaborateurRepository;
+import com.example.backend.Repository.FormateurRepository;
+import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.CollaborateurService;
 import com.example.backend.Service.FormateurService;
 import com.example.backend.Service.SessionFormationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +30,10 @@ import java.util.UUID;
 public class SessionFormationController {
     @Autowired
     private SessionFormationService sessionFormationService;
+    @Autowired
+    private FormateurRepository formateurRepository;
+    @Autowired
+    private CollaborateurRepository collaborateurRepository;
 
     @PostMapping("/add/{formationId}")
     public ResponseEntity<SessionFormation> addSessionFormation(@PathVariable("formationId") Long formationId,
@@ -46,7 +56,7 @@ public class SessionFormationController {
     public ResponseEntity<SessionFormation> updateSessionFormation(@PathVariable("sessionId") Long sessionId,
                                                                    @RequestParam("groupId") Long groupId,
                                                                    @RequestParam("dateDebut") String dateDebut,
-                                                                       @RequestParam("dateFin") String dateFin) {
+                                                                   @RequestParam("dateFin") String dateFin) {
         try {
             SessionFormation updatedSession = sessionFormationService.updateSessionFormation(sessionId, groupId,dateDebut,dateFin);
             return new ResponseEntity<>(updatedSession, HttpStatus.OK);
@@ -87,6 +97,36 @@ public class SessionFormationController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @GetMapping("/sessions")
+    public List<SessionFormation> getSessions() {
+        // Obtenez l'ID du formateur connecté à partir de votre logique d'authentification
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long formateurId = userDetails.getId();
+
+        // Récupérez le formateur connecté
+        Formateur formateur = formateurRepository.findByFormateurFormateurId(formateurId)
+                .orElseThrow(() -> new EntityNotFoundException("Formateur non trouvé avec l'ID : " + formateurId));
+
+        // Récupérez les sessions de formation associées à ce formateur
+        return sessionFormationService.getSessionsByFormateur(formateur);
+    }
+    @GetMapping("/sessionsCollab")
+    public List<SessionFormation> getSessionsCollab() {
+        // Obtenez l'ID du collaborateur connecté à partir de votre logique d'authentification
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long userId = userDetails.getId(); // ID de l'utilisateur
+
+        // Utilisez la nouvelle méthode pour trouver le Collaborateur par l'ID de l'utilisateur
+        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + userId));
+
+        // Récupérez les sessions de formation associées à ce collaborateur
+        return sessionFormationService.getSessionsByCollaborateur(collaborateur);
+    }
+
 
 
 }

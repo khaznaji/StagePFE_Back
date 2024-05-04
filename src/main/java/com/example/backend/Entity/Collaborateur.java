@@ -66,5 +66,8 @@ public class Collaborateur {
     @ManyToMany(mappedBy = "collaborateurs")
     @JsonIgnore
     private List<Groups> groups;
-
+    @OneToMany(mappedBy = "collaborateur")
+    private List<BilanAnnuel> bilansAnnuels;
+    @OneToMany(mappedBy = "collaborateurs")
+    private List<Entretien> entretiens;
 }

@@ -423,7 +423,6 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserDetails(@PathVariable Long id) {
         User user = userService.findById(id);
-
         if (user != null) {
             Map<String, Object> userDetails = new HashMap<>();
             userDetails.put("id", user.getId());

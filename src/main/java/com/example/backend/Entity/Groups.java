@@ -16,6 +16,7 @@
 
         @ManyToOne
         @JoinColumn(name = "formateur_id")
+        @JsonIgnore
         private Formateur formateur;
 
         @ManyToMany
@@ -24,7 +25,6 @@
                 joinColumns = @JoinColumn(name = "group_id"),
                 inverseJoinColumns = @JoinColumn(name = "collaborator_id"))
         @JsonIgnore
-
         private List<Collaborateur> collaborateurs;
 
         private String nom ;
@@ -32,5 +32,7 @@
         @JoinColumn(name = "formation_id")
         private Formation formation;
         private boolean certificatesGenerated;
+        @Enumerated(EnumType.STRING)
+        private Etat etat;
 
     }

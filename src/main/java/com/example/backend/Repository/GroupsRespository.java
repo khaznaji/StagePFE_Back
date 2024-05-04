@@ -9,5 +9,7 @@ import java.util.List;
 
 public interface GroupsRespository extends JpaRepository<Groups,Long> {
     List<Groups> findByFormation(Formation formation);
+    List<Groups> findByFormateur_Id(Long formateurId);
+
 
 }

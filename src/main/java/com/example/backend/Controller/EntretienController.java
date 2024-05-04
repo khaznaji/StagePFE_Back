@@ -66,6 +66,29 @@ public class EntretienController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+    @GetMapping("/annuelbyId/{id}")
+    public ResponseEntity<Map<String, Object>> getEntretienannuelbyId(@PathVariable Long id) {
+        Optional<Entretien> entretienOptional = entretienService.getEntretienById(id);
+
+        if (entretienOptional.isPresent()) {
+            Entretien entretien = entretienOptional.get();
+
+            Map<String, Object> entretienAvecCollaborateur = new HashMap<>();
+            entretienAvecCollaborateur.put("entretien", entretien);
+
+
+                Collaborateur collaborateur = entretien.getCollaborateurs();
+                if (collaborateur != null) {
+                    // Ajoutez les détails du collaborateur à la réponse
+                    entretienAvecCollaborateur.put("nomCollaborateur", collaborateur.getCollaborateur().getNom());
+                    entretienAvecCollaborateur.put("prenomCollaborateur", collaborateur.getCollaborateur().getPrenom());
+
+            }
+            return new ResponseEntity<>(entretienAvecCollaborateur, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
 
     @PostMapping("/create")
@@ -154,7 +177,7 @@ public class EntretienController {
 
 
     @GetMapping("/collaborateur")
-    public ResponseEntity<List<Map<String, Object>>> getEntretiensDuCollaborateurConnecte() {
+    public ResponseEntity<List<Map<String, Object>>> getEntretiensTechniquesDuCollaborateurConnecte() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         Long userId = userDetails.getId();
@@ -165,19 +188,19 @@ public class EntretienController {
 
         List<Entretien> entretiensDuCollaborateur = entretienService.getEntretiensByCollaborateurId(collaborateur.getId());
 
-        // Filtrer les entretiens pour ne récupérer que ceux avec l'état "En_Attente"
+        // Filtrer les entretiens pour ne récupérer que ceux de type "Technique" avec l'état "En_Attente"
         List<Map<String, Object>> entretiensAvecCollaborateurs = entretiensDuCollaborateur.stream()
-                .filter(entretien -> entretien.getEtatEntretien() == EtatEntretien.En_Attente)
+                .filter(entretien -> entretien.getTypeEntretien() == TypeEntretien.Technique && entretien.getEtatEntretien() == EtatEntretien.En_Attente)
                 .map(entretien -> {
                     Map<String, Object> entretienAvecCollaborateur = new HashMap<>();
                     entretienAvecCollaborateur.put("entretien", entretien);
 
                     Candidature candidature = entretien.getCandidature();
                     if (candidature != null) {
-                        Collaborateur collaborateurr = candidature.getCollaborateur();
-                        if (collaborateurr != null) {
-                            entretienAvecCollaborateur.put("nomCollaborateur", collaborateurr.getCollaborateur().getNom());
-                            entretienAvecCollaborateur.put("prenomCollaborateur", collaborateurr.getCollaborateur().getPrenom());
+                        Collaborateur collaborateurCandidature = candidature.getCollaborateur();
+                        if (collaborateurCandidature != null) {
+                            entretienAvecCollaborateur.put("nomCollaborateur", collaborateurCandidature.getCollaborateur().getNom());
+                            entretienAvecCollaborateur.put("prenomCollaborateur", collaborateurCandidature.getCollaborateur().getPrenom());
                         }
                     }
 
@@ -188,16 +211,17 @@ public class EntretienController {
         return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
     }
 
+
     @GetMapping("/managerService")
-    public ResponseEntity<?> getEntretiensDumanagerServiceConnecte() {
+    public ResponseEntity<?> getEntretiensTechniquesDumanagerServiceConnecte() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         Long userId = userDetails.getId();
 
-        ManagerService collaborateur = managerServiceRepository.findByManagerManagerId(userId)
+        ManagerService managerService = managerServiceRepository.findByManagerManagerId(userId)
                 .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + userId));
 
-        List<Poste> postesDuManager = collaborateur.getPostes();
+        List<Poste> postesDuManager = managerService.getPostes();
 
         if (postesDuManager.isEmpty()) {
             return new ResponseEntity<>("Le manager n'est pas associé à un poste", HttpStatus.NOT_FOUND);
@@ -206,20 +230,24 @@ public class EntretienController {
         List<Entretien> entretiensDuManager = new ArrayList<>();
         for (Poste poste : postesDuManager) {
             List<Entretien> entretiensDuPoste = poste.getEntretiens();
-            entretiensDuManager.addAll(entretiensDuPoste);
+            // Filtrer les entretiens pour ne conserver que ceux de type "Technique"
+            List<Entretien> entretiensTechniquesDuPoste = entretiensDuPoste.stream()
+                    .filter(entretien -> entretien.getTypeEntretien() == TypeEntretien.Technique)
+                    .collect(Collectors.toList());
+            entretiensDuManager.addAll(entretiensTechniquesDuPoste);
         }
 
         List<Map<String, Object>> entretiensAvecCollaborateurs = new ArrayList<>();
         for (Entretien entretien : entretiensDuManager) {
-            if (entretien.getEtatEntretien() == EtatEntretien.En_Attente) { // Vérifiez si l'état de l'entretien est En_Attente
+            if (entretien.getEtatEntretien() == EtatEntretien.En_Attente) {
                 Map<String, Object> entretienAvecCollaborateur = new HashMap<>();
                 entretienAvecCollaborateur.put("entretien", entretien);
                 Candidature candidature = entretien.getCandidature();
                 if (candidature != null) {
-                    Collaborateur collaborateurr = candidature.getCollaborateur();
+                    Collaborateur collaborateur = candidature.getCollaborateur();
                     if (collaborateur != null) {
-                        entretienAvecCollaborateur.put("nomCollaborateur", collaborateurr.getCollaborateur().getNom());
-                        entretienAvecCollaborateur.put("prenomCollaborateur", collaborateurr.getCollaborateur().getPrenom());
+                        entretienAvecCollaborateur.put("nomCollaborateur", collaborateur.getCollaborateur().getNom());
+                        entretienAvecCollaborateur.put("prenomCollaborateur", collaborateur.getCollaborateur().getPrenom());
                     }
                 }
                 entretiensAvecCollaborateurs.add(entretienAvecCollaborateur);
@@ -227,11 +255,12 @@ public class EntretienController {
         }
 
         if (entretiensAvecCollaborateurs.isEmpty()) {
-            return new ResponseEntity<>("Aucun entretien En_Attente trouvé pour ce manager", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("Aucun entretien En_Attente de type Technique trouvé pour ce manager", HttpStatus.NOT_FOUND);
         }
 
         return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
     }
+
 
 
     @PutMapping("/{id}/noter")
@@ -249,7 +278,7 @@ public class EntretienController {
 
     @GetMapping("/EntretiensSpecifiques/{postId}")
     public ResponseEntity<List<Map<String, String>>> getEntretiensSpecifiques(@PathVariable Long postId) {
-        List<Entretien> entretiens = entretienService.getEntretiensByPoste(postId);
+        List<Entretien> entretiens = entretienService.getEntretiensTechniquesByPoste(postId);
         List<Map<String, String>> entretiensInfo = new ArrayList<>();
         for (Entretien entretien : entretiens) {
             if (entretien.getEtatEntretien() == EtatEntretien.Termine) { // Filtrer les entretiens avec l'état "Termine"
@@ -273,6 +302,49 @@ public class EntretienController {
 
         return new ResponseEntity<>(entretiensInfo, HttpStatus.OK);
     }
+    @PostMapping("/ajoutAnnuel")
+    public ResponseEntity<String> ajoutEntretienAnnuel(@RequestParam Long collaborateurId,
+                                                          @RequestParam String dateEntretien,
+                                                          @RequestParam String heureDebut,
+                                                          @RequestParam String heureFin) {
+        entretienService.ajoutEntretienAnnuel(collaborateurId, dateEntretien, heureDebut, heureFin);
+        return ResponseEntity.status(HttpStatus.CREATED).body("Entretien technique ajouté avec succès.");
+    }
+
+    @PutMapping("/updateAnnuel/{entretienId}")
+    public ResponseEntity<String> updateEntretienAnnuel(@PathVariable Long entretienId,
+                                                           @RequestParam String dateEntretien,
+                                                           @RequestParam String heureDebut,
+                                                           @RequestParam String heureFin) {
+        entretienService.updateEntretienAnnuel(entretienId, dateEntretien, heureDebut, heureFin);
+        return ResponseEntity.ok("Entretien technique mis à jour avec succès.");
+    }
+    @DeleteMapping("/deleteAnnuel/{entretienId}")
+    public ResponseEntity<String> deleteEntretienTechnique(@PathVariable Long entretienId) {
+        entretienService.deleteEntretien(entretienId);
+        return ResponseEntity.ok("Entretien technique supprimé avec succès.");
+    }
 
 
+
+    @GetMapping("/entretiens/annuel")
+    public ResponseEntity<?> getEntretiensAnnuelDuManagerConnecte() {
+        List<Map<String, Object>> entretiensAvecCollaborateurs = entretienService.getEntretiensAnnuelDuManagerConnecte();
+
+        if (entretiensAvecCollaborateurs.isEmpty()) {
+            return new ResponseEntity<>("Aucun entretien annuel trouvé pour ce manager", HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
+    }
+    @GetMapping("/entretiensCollab/annuel")
+    public ResponseEntity<?> getEntretiensAnnuelDuCollabConnecte() {
+        List<Map<String, Object>> entretiensAvecCollaborateurs = entretienService.getEntretiensAnnuelDuCollaborateurConnecte();
+
+        if (entretiensAvecCollaborateurs.isEmpty()) {
+            return new ResponseEntity<>("Aucun entretien annuel trouvé pour ce manager", HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
+    }
 }

@@ -79,6 +79,84 @@ public class EvaluationController {
         response.put("message", "Évaluation ajoutée avec succès pour la compétence: " + competence.getNom());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+    @PostMapping("/evaluation/{collaborateurId}")
+    public ResponseEntity<?> addEvaluation(@PathVariable Long collaborateurId,
+                                           @RequestParam("competenceId") Long competenceId,
+                                           @RequestParam("evaluationValue") int evaluationValue) {
+        // Rechercher le collaborateur correspondant à partir de son ID
+        Optional<Collaborateur> collaborateurOptional = collaborateurRepository.findById(collaborateurId);
+        if (!collaborateurOptional.isPresent()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Collaborateur non trouvé pour l'ID: " + collaborateurId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        Collaborateur collaborateur = collaborateurOptional.get();
+
+        // Rechercher la compétence correspondante à partir de son ID
+        Optional<Competence> competenceOptional = competenceRepository.findById(competenceId);
+        if (!competenceOptional.isPresent()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Compétence non trouvée pour l'ID: " + competenceId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        Competence competence = competenceOptional.get();
+
+        // Vérifier si une évaluation existe déjà pour cette compétence et ce collaborateur
+        Optional<Evaluation> existingEvaluationOptional = evaluationRepository.findByCollaborateurAndCompetence(collaborateur, competence);
+        if (existingEvaluationOptional.isPresent()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Vous avez déjà évalué cette compétence");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        // Créer une nouvelle évaluation
+        Evaluation evaluation = new Evaluation();
+        evaluation.setCollaborateur(collaborateur);
+        evaluation.setCompetence(competence);
+        evaluation.setEvaluation(evaluationValue);
+
+        // Enregistrer l'évaluation dans la base de données
+        evaluationRepository.save(evaluation);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Évaluation ajoutée avec succès pour la compétence: " + competence.getNom());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+    @PutMapping("/evaluation/{evaluationId}/{collaborateurId}")
+    public ResponseEntity<?> updateEvaluationByIdAndCollaborateurId(
+            @PathVariable("evaluationId") Long evaluationId,
+            @PathVariable("collaborateurId") Long collaborateurId,
+            @RequestParam(value = "evaluation") int evaluation) {
+
+
+
+
+
+        // Recherche de l'évaluation par son identifiant
+        Optional<Evaluation> existingEvaluationOptional = evaluationRepository.findById(evaluationId);
+
+        if (!existingEvaluationOptional.isPresent()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Aucune évaluation trouvée pour cet identifiant");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        Evaluation existingEvaluation = existingEvaluationOptional.get();
+
+        // Assurez-vous que l'évaluation appartient bien au collaborateur spécifié dans le chemin de l'URL
+        if (!existingEvaluation.getCollaborateur().getId().equals(collaborateurId)) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "L'évaluation spécifiée n'appartient pas au collaborateur spécifié");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        existingEvaluation.setEvaluation(evaluation);
+        evaluationRepository.save(existingEvaluation);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "L'évaluation a été mise à jour avec succès");
+        return ResponseEntity.ok().body(response);
+    }
 
     @PutMapping("/evaluation/{evaluationId}")
     public ResponseEntity<?> updateEvaluationById(@PathVariable("evaluationId") Long evaluationId,
@@ -109,6 +187,34 @@ public class EvaluationController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "L'évaluation a été mise à jour avec succès");
         return ResponseEntity.ok().body(response);  }
+    @DeleteMapping("/evaluation/{evaluationId}/{collaborateurId}")
+    public ResponseEntity<?> deleteEvaluationByIdAndCollaborateurId(@PathVariable("evaluationId") Long evaluationId,
+                                                                    @PathVariable("collaborateurId") Long collaborateurId) {
+
+        // Recherche de l'évaluation par son identifiant
+        Optional<Evaluation> existingEvaluationOptional = evaluationRepository.findById(evaluationId);
+
+        if (!existingEvaluationOptional.isPresent()) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Aucune évaluation trouvée pour cet identifiant");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+        Evaluation existingEvaluation = existingEvaluationOptional.get();
+
+        // Vérifier si l'évaluation appartient au collaborateur spécifié dans le chemin de l'URL
+        if (!existingEvaluation.getCollaborateur().getId().equals(collaborateurId)) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "L'évaluation spécifiée n'appartient pas au collaborateur spécifié");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+
+        evaluationRepository.delete(existingEvaluation);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "L'évaluation a été supprimée avec succès");
+        return ResponseEntity.ok().body(response);
+    }
 
     @DeleteMapping("/evaluation/{evaluationId}")
     public ResponseEntity<?> deleteEvaluationById(@PathVariable("evaluationId") Long evaluationId) {
@@ -133,6 +239,29 @@ public class EvaluationController {
         Map<String, String> response = new HashMap<>();
         response.put("message", "L'évaluation a été supprimée avec succès");
         return ResponseEntity.ok().body(response);
+    }
+    @GetMapping("/evaluations/{collaborateurId}")
+    public ResponseEntity<?> getAllEvaluationsForCollaborateur(@PathVariable Long collaborateurId) {
+        // Rechercher le collaborateur correspondant à partir de son ID
+        Optional<Collaborateur> collaborateurOptional = collaborateurRepository.findById(collaborateurId);
+        if (!collaborateurOptional.isPresent()) {
+            return new ResponseEntity<>("Collaborateur non trouvé pour cet ID", HttpStatus.NOT_FOUND);
+        }
+        Collaborateur collaborateur = collaborateurOptional.get();
+
+        // Rechercher toutes les évaluations pour ce collaborateur
+        List<Evaluation> evaluations = evaluationRepository.findByCollaborateur(collaborateur);
+
+        if (evaluations.isEmpty()) {
+            return new ResponseEntity<>("Aucune évaluation trouvée pour ce collaborateur", HttpStatus.NOT_FOUND);
+        }
+
+        // Récupérer le nom de la compétence pour chaque évaluation
+        evaluations.forEach(evaluation -> {
+            evaluation.setCompetenceName(evaluation.getCompetence().getNom());
+        });
+
+        return new ResponseEntity<>(evaluations, HttpStatus.OK);
     }
 
    @GetMapping("/evaluations")
