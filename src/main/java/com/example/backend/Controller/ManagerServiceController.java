@@ -51,7 +51,7 @@ public class ManagerServiceController {
             @RequestParam("gender") Gender gender,
             @RequestParam("department") Departement department,
             @RequestParam("poste") String poste,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree
+            @RequestParam("dateEntree") String dateEntree
     ) {
         try {
             User manager = new User();

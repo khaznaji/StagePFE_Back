@@ -28,8 +28,7 @@
         private Departement department;
         private String poste ;
         private String bio ;
-        @DateTimeFormat(pattern = "dd/MM/yyyy")
-        private LocalDate dateEntree;
+        private String dateEntree;
 
         @ManyToMany
         @JoinTable(

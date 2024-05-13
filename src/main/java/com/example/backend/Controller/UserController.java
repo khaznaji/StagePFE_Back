@@ -66,8 +66,8 @@ public class UserController {
             @RequestParam("department") Departement department,
             @RequestParam("poste") String poste,
             @RequestParam(value = "bio", required = false) String bio,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree,
-            @RequestParam("competences") List<Competence> competences
+            @RequestParam(value = "dateEntree") String dateEntree,
+                    @RequestParam("competences") List<Competence> competences
     ) {
         try {
             User manager = new User();
@@ -102,9 +102,18 @@ public class UserController {
             emailService.sendWelcomeEmail(manager.getEmail(),manager.getNom(), resetLink, verificationCode.getActivationCode());
 
             return new ResponseEntity<>(manager, HttpStatus.CREATED);
-        } catch (EmailAlreadyExistsException | MatriculeAlreadyExistsException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (EmailAlreadyExistsException emailException) {
+            Map<String, String> responseMap = new HashMap<>();
+            responseMap.put("emailError", "L'adresse e-mail est déjà utilisée. Veuillez en choisir une autre.");
+            return ResponseEntity.badRequest().body(responseMap);
+        } catch (MatriculeAlreadyExistsException matriculeException) {
+            Map<String, String> responseMap = new HashMap<>();
+            responseMap.put("matriculeError", "Le matricule est déjà utilisé. Veuillez en choisir un autre.");
+            return ResponseEntity.badRequest().body(responseMap);
         }
+
+
+
     }
 
 

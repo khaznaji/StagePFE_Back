@@ -82,7 +82,6 @@ public class ChatController {
         }
     }
 
-    //finds the chat whose name is the parameter, if it doesn't exist it gets created, the ID gets returned either way
     private Long createAndOrGetChat(String name) {
         Chat ce = chatRepository.findByName(name);
 

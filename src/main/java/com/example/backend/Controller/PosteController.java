@@ -9,6 +9,7 @@ import com.example.backend.Repository.PosteRepository;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.CandidatureService;
 import com.example.backend.Service.EntretienService;
+import com.example.backend.Service.ResumeMatcherService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.persistence.EntityNotFoundException;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,6 +45,7 @@ public class PosteController {
     private EntretienService entretienService;
     @Autowired
     private ManagerServiceRepository managerServiceRepository;
+
     @PostMapping("/create")
     public ResponseEntity<?> createPoste(
             @RequestParam("titre") String titre,
@@ -66,6 +69,7 @@ public class PosteController {
         poste.setCompetences(competences);
         System.out.println(poste);
         posteRepository.save(poste);
+
         return new ResponseEntity<>(poste, HttpStatus.CREATED);
     }
 
@@ -138,20 +142,32 @@ public class PosteController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
         }
 
+        try {
+            // Calculer le pourcentage de correspondance
 
-        Candidature candidature = new Candidature();
-        candidature.setCollaborateur(collaborateur);
-        candidature.setPoste(poste);
-        candidature.setEtat(EN_ATTENTE); // Définissez l'état initial de la candidature
-        candidature.setDateCandidature(LocalDate.now()); // Définissez la date de candidature
+            // Créer une nouvelle candidature
+            Candidature candidature = new Candidature();
+            candidature.setCollaborateur(collaborateur);
+            candidature.setPoste(poste);
+            candidature.setEtat(EN_ATTENTE); // Définissez l'état initial de la candidature
+            candidature.setDateCandidature(LocalDate.now()); // Définissez la date de candidature
 
-        // Sauvegardez la nouvelle candidature dans la base de données
-        candidatureRepository.save(candidature);
+            // Sauvegardez la nouvelle candidature dans la base de données
+            candidatureRepository.save(candidature);
+            resumeMatcherService.calculateMatchPercentage(collaborateur.getId(),postId);
 
-        Map<String, String> responseBody = new HashMap<>();
-        responseBody.put("message", "Vous avez postulé avec succès à ce poste");
-        return ResponseEntity.ok(responseBody);
+            Map<String, String> responseBody = new HashMap<>();
+            responseBody.put("message", "Vous avez postulé avec succès à ce poste");
+            return ResponseEntity.ok(responseBody);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Gérer l'erreur
+            Map<String, String> responseBody = new HashMap<>();
+            responseBody.put("error", "Une erreur s'est produite lors du calcul du pourcentage de correspondance");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
+        }
     }
+
 
 
     @PutMapping("/updateRefus/{postId}")
@@ -948,6 +964,27 @@ public class PosteController {
     public void accepterCandidatures(@RequestBody List<Long> candidatureIds) {
         candidatureService.accepterCandidatures(candidatureIds);
     }
-
-
+    @Autowired
+    private ResumeMatcherService resumeMatcherService;
+    @PostMapping("/match-percentage/{collaborateurId}/{posteId}")
+    public double getMatchPercentage(@PathVariable Long collaborateurId, @PathVariable Long posteId) {
+        try {
+            return resumeMatcherService.calculateMatchPercentage(collaborateurId, posteId);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Gérer l'erreur
+            return -1; // Ou tout autre indicateur d'erreur
+        }
+    }
+    @GetMapping("/extract-text/{collaborateurId}")
+    public String extractTextFromPDF(@PathVariable Long collaborateurId) {
+        String basePath = "C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\";
+        try {
+            return resumeMatcherService.extractTextFromPDF(collaborateurId, basePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+            // Gérer l'erreur
+            return "Erreur lors de l'extraction du texte du PDF.";
+        }
+    }
 }

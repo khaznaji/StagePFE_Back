@@ -36,6 +36,8 @@ public class Candidature {
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
     private int score;
+    private int matchPercentage;
+
     @OneToOne(mappedBy = "candidature")
     @JsonIgnore // Ignore la sérialisation JSON de cet attribut
     private Entretien entretien;

@@ -80,6 +80,50 @@ public class AuthController {
     @PostMapping("/signin")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         try {
+            // Vérification si l'utilisateur existe
+            User user = userRepository.findUserByEmail(loginRequest.getEmail());
+            if (user == null) {
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Error: Email not found!"));
+            }
+
+            // Authentification
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            String jwt = jwtUtils.generateJwtToken(authentication);
+
+            // Obtention des détails de l'utilisateur
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+            List<String> roles = userDetails.getAuthorities().stream()
+                    .map(item -> item.getAuthority())
+                    .collect(Collectors.toList());
+
+            // Vérification de l'état d'activation
+            if (!user.isActivated()) {
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Error: Compte inactif!"));
+            }
+
+
+            return ResponseEntity.ok(new JwtResponse(jwt,
+                    userDetails.getId(),
+                    userDetails.getUsername(),
+                    roles));
+
+        } catch (BadCredentialsException e) {
+            // Si les informations d'identification ne sont pas valides
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Mot de passe invalide!"));
+        }
+    }
+
+    /* public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+        try {
             // Authentification
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
@@ -128,7 +172,7 @@ public class AuthController {
                     .badRequest()
                     .body(new MessageResponse("Error: Email not found!"));
         }
-    }
+    } */
 
 
     @PutMapping("/{userId}/activate")
