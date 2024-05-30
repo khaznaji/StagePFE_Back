@@ -51,4 +51,25 @@
         @JsonIgnore
 
         private List<Entretien> entretiens;
+        @Transient
+        public long getNombreCollaborateurs() {
+            return collaborateurs != null ? collaborateurs.size() : 0;
+        }
+
+        @Transient
+        public long getNombrePostesPublies() {
+            return postes != null ? postes.stream().filter(poste -> poste.getPoste() == EtatPoste.Publie).count() : 0;
+        }
+
+        @Transient
+        public long getNombreDemandesFormation() {
+            return collaborateurs != null ? collaborateurs.stream()
+                    .mapToLong(collaborateur -> collaborateur.getParticipations() != null ? collaborateur.getParticipations().size() : 0)
+                    .sum() : 0;
+        }
+
+        @Transient
+        public long getNombrePostesApprouves() {
+            return postes != null ? postes.stream().filter(poste -> poste.getPoste() == EtatPoste.Accepte).count() : 0;
+        }
     }

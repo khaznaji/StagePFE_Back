@@ -152,7 +152,9 @@ public class EvaluationController {
 
         existingEvaluation.setEvaluation(evaluation);
         evaluationRepository.save(existingEvaluation);
-
+        Collaborateur collaborateur = existingEvaluation.getCollaborateur();
+        collaborateur.setVerified(true); // Mettre le statut à true
+        collaborateurRepository.save(collaborateur);
         Map<String, String> response = new HashMap<>();
         response.put("message", "L'évaluation a été mise à jour avec succès");
         return ResponseEntity.ok().body(response);

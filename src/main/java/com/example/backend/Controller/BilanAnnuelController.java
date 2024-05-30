@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RestController
@@ -133,9 +134,18 @@ public class BilanAnnuelController {
     }
 
     @GetMapping("/collaborateur/{collaborateurId}")
-    public ResponseEntity<List<BilanAnnuel>> getBilansByCollaborateurId(@PathVariable Long collaborateurId) {
-        List<BilanAnnuel> bilans = bilanAnnuelService.getBilansByCollaborateurId(collaborateurId);
-        return new ResponseEntity<>(bilans, HttpStatus.OK);
+    public ResponseEntity<List<BilanAnnuel>> getEnvoyedBilansByCollaborateurId(@PathVariable Long collaborateurId) {
+        // Récupérer tous les bilans du collaborateur
+        List<BilanAnnuel> allBilans = bilanAnnuelService.getBilansByCollaborateurId(collaborateurId);
+
+        // Filtrer les bilans envoyés
+        List<BilanAnnuel> envoyedBilans = allBilans.stream()
+                .filter(bilan -> bilan.getEtatBilan() == Etat.Envoye)
+                .collect(Collectors.toList());
+
+        // Retourner les bilans envoyés
+        return new ResponseEntity<>(envoyedBilans, HttpStatus.OK);
     }
+
 
 }

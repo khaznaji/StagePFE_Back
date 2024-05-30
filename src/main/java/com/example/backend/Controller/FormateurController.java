@@ -78,7 +78,7 @@ public class FormateurController {
             User registeredManager = userRepository.save(manager);
 
             Formateur request = new Formateur();
-            request.setFomarteur(registeredManager);
+            request.setFormateur(registeredManager);
             request.setDateEntree(dateEntree);
             request.setSpecialite(specialite);
             formateurRepository.save(request);

@@ -1,14 +1,14 @@
 package com.example.backend.Controller;
 
-import com.example.backend.Entity.Collaborateur;
-import com.example.backend.Entity.Formateur;
-import com.example.backend.Entity.ModaliteSession;
-import com.example.backend.Entity.SessionFormation;
+import com.example.backend.Configuration.MailConfig;
+import com.example.backend.Entity.*;
 import com.example.backend.Repository.CollaborateurRepository;
 import com.example.backend.Repository.FormateurRepository;
+import com.example.backend.Repository.UserRepository;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.CollaborateurService;
 import com.example.backend.Service.FormateurService;
+import com.example.backend.Service.FormationService;
 import com.example.backend.Service.SessionFormationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,6 +34,10 @@ public class SessionFormationController {
     private FormateurRepository formateurRepository;
     @Autowired
     private CollaborateurRepository collaborateurRepository;
+    @Autowired
+    private MailConfig mailConfig;
+    @Autowired
+    private FormationService formationService;
 
     @PostMapping("/add/{formationId}")
     public ResponseEntity<SessionFormation> addSessionFormation(@PathVariable("formationId") Long formationId,
@@ -41,6 +45,26 @@ public class SessionFormationController {
                                                                 @RequestParam("dateDebut") String dateDebut,
                                                                 @RequestParam("dateFin") String dateFin) {
         SessionFormation newSession = sessionFormationService.addSessionFormation(formationId , groupId, dateDebut, dateFin);
+        List<Collaborateur> usersInGroup = sessionFormationService.getUsersInGroup(groupId);
+        Formation formation = formationService.getFormationById(formationId);
+
+        // Send email to each user
+        for (Collaborateur user : usersInGroup) {
+            String to = user.getCollaborateur().getEmail();
+            String subject = "Nouvelle session ajoutée";
+            String text = "Bonjour " + user.getCollaborateur().getNom() + ",\n\n"
+                    + "Nous avons le plaisir de vous informer que vous avez été ajouté à une nouvelle session de formation.\n\n"
+                    + "Détails de la session :\n"
+                    + "Nom de la formation : " + formation.getTitle() + "\n"
+                    + "Date de début : " + dateDebut + "\n"
+                    + "Date de fin : " + dateFin + "\n\n"
+                    + "Merci de votre attention.\n\n"
+                    + "Cordialement,\n"
+                    + "L'équipe RH";
+
+            mailConfig.sendEmail(to, subject, text);
+        }
+
         return new ResponseEntity<>(newSession, HttpStatus.CREATED);
     }
     @GetMapping("/allsession/{formationId}")
@@ -126,7 +150,6 @@ public class SessionFormationController {
         // Récupérez les sessions de formation associées à ce collaborateur
         return sessionFormationService.getSessionsByCollaborateur(collaborateur);
     }
-
 
 
 }

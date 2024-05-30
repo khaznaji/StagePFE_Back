@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import javax.persistence.*;
@@ -62,7 +63,8 @@ public class Collaborateur {
     @OneToMany(mappedBy = "collaborateur")
     @JsonIgnore
     private List<Certificat> certificats;
-
+    @Value("#{false}")
+    private boolean isVerified;
     @ManyToMany(mappedBy = "collaborateurs")
     @JsonIgnore
     private List<Groups> groups;

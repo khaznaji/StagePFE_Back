@@ -254,7 +254,9 @@ public class CollaborateurController {
             collaborateurInfo.put("nom", user.getNom());
             collaborateurInfo.put("prenom", user.getPrenom());
             collaborateurInfo.put("poste", collaborateur.getPoste());
-            collaborateurInfo.put("dateEntree", collaborateur.getDateEntree());
+        collaborateurInfo.put("isVerified", collaborateur.isVerified()); // Ajoutez cette ligne
+
+        collaborateurInfo.put("dateEntree", collaborateur.getDateEntree());
         String managerName = collaborateur.getManagerService().getManager().getNom();
         String managerPrenom = collaborateur.getManagerService().getManager().getPrenom();
         String managerImage = collaborateur.getManagerService().getManager().getImage();

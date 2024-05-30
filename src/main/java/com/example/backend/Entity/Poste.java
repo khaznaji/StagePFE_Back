@@ -38,7 +38,8 @@ public class Poste {
     @Enumerated(EnumType.STRING)
     private Departement departement;
     private String description;
-    private int nombrePostesDisponibles;
+    @Enumerated(EnumType.STRING)
+    private TypeContrat typeContrat ;
     private LocalDate dateCreation;
     @Enumerated(EnumType.STRING)
     private EtatPoste poste;

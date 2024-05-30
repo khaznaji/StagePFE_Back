@@ -29,7 +29,7 @@ public class    Formation {
     private Departement department;
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-    @OneToOne()
+    @ManyToOne
     @JoinColumn(name = "formateur_id")
     @JsonIgnore
     private Formateur formateur;

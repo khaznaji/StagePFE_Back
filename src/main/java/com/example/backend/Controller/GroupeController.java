@@ -101,8 +101,8 @@ public class GroupeController {
 
                 Map<String, Object> groupDetails = new HashMap<>();
                 groupDetails.put("group", group);
-                groupDetails.put("formateurNom", formateur.getFomarteur().getNom());
-                groupDetails.put("formateurPrenom", formateur.getFomarteur().getPrenom());
+                groupDetails.put("formateurNom", formateur.getFormateur().getNom());
+                groupDetails.put("formateurPrenom", formateur.getFormateur().getPrenom());
 
                 List<Map<String, Object>> collaborateursList = new ArrayList<>();
                 for (Collaborateur collaborateur : collaborateurs) {
@@ -238,9 +238,9 @@ public class GroupeController {
 
                     if (formateur != null) {
                         // Récupérer l'URL de l'image du formateur
-                        String formateurImageUrl = formateur.getFomarteur().getImage();
-                        String formateurnom = formateur.getFomarteur().getNom();
-                        String formateurprenom = formateur.getFomarteur().getPrenom();
+                        String formateurImageUrl = formateur.getFormateur().getImage();
+                        String formateurnom = formateur.getFormateur().getNom();
+                        String formateurprenom = formateur.getFormateur().getPrenom();
                         // Supposons que getImageUrl() récupère l'URL de l'image du formateur
                         // Ajouter l'URL de l'image du formateur au groupe
                         groupeAvecFormateur.put("formateurImageUrl", formateurImageUrl);

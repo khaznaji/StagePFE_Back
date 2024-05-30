@@ -1,10 +1,7 @@
 package com.example.backend.Service;
 
 import com.example.backend.Entity.*;
-import com.example.backend.Repository.FormateurRepository;
-import com.example.backend.Repository.FormationRepository;
-import com.example.backend.Repository.GroupsRespository;
-import com.example.backend.Repository.SessionFormationRepository;
+import com.example.backend.Repository.*;
 import com.example.backend.Security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -82,30 +79,7 @@ public class SessionFormationService {
         // Implémentez la logique pour supprimer la session de formation avec l'ID donné
         sessionFormationRepository.deleteById(sessionId);
     }
-    public List<SessionFormation> getSessionsFormationByFormateurConnecte() {
-        // Récupérer les détails de l'utilisateur connecté
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        Long formateurId = userDetails.getId();
 
-        // Récupérer le formateur connecté
-        Formateur formateur = formateurRepository.findByFormateurFormateurId(formateurId)
-                .orElseThrow(() -> new EntityNotFoundException("Formateur non trouvé avec l'ID : " + formateurId));
-
-        // Récupérer toutes les formations du formateur
-        Formation formation = formateur.getFormation();
-
-        // Liste pour stocker les sessions de formation du formateur
-        if (formation != null) {
-            // Si la formation existe, récupérer ses sessions
-            List<SessionFormation> sessions = formation.getSessions();
-            return sessions;
-        } else {
-            // Si la formation n'existe pas, retourner une liste vide
-            return Collections.emptyList();
-        }
-
-    }
     public List<SessionFormation> getSessionsByFormateur(Formateur formateur) {
         // Récupérer le groupe associé à ce formateur
         List<Groups> groups = formateur.getGroups();
@@ -149,6 +123,12 @@ public class SessionFormationService {
         // Renvoyer la liste complète des sessions de formation associées à ce collaborateur
         return sessions;
     }
+    @Autowired
+    private CollaborateurRepository collaborateurRepository ;
 
+    public List<Collaborateur> getUsersInGroup(Long groupId) {
+        // Implement this method to return users in the specified group
+        return collaborateurRepository.findByGroupsId(groupId);
+    }
 }
 

@@ -13,6 +13,7 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User,Long> {
     Optional<User> findByEmail(String email);
+
     boolean existsByEmailAndIdNot(String email, Long id);
     Optional<User> findByRoleAndId(Role role, Long id);
     long countByRole(Role role);
@@ -21,11 +22,11 @@ public interface UserRepository extends JpaRepository<User,Long> {
     List<User> findByRole(Role role);
     List<User> findByManagerService(ManagerService managerService);
 
-
     boolean existsByEmail(String email);
     boolean existsByMatricule(String email);
 
-
     User findUserByEmail(String email);
+    long countByManagerServiceId(Long managerServiceId);
+
 
 }

@@ -33,6 +33,8 @@ public class QuizController {
     public ResponseEntity<?> addQuizToPoste(@PathVariable(value = "postId") Long postId, @RequestBody Quiz quiz) {
         return posteRepository.findById(postId).map(poste -> {
             quiz.setPoste(poste);
+            quiz.setMaxMarks("10");
+            quiz.setNumberOfQuestions("10");
             quizRepository.save(quiz);
             Map<String, String> response = new HashMap<>();
             response.put("success", "Quiz added successfully to Poste with ID: " + postId);
@@ -61,8 +63,8 @@ public class QuizController {
         return quizRepository.findById(quizId).map(quiz -> {
             quiz.setTitle(updatedQuiz.getTitle());
             quiz.setDescription(updatedQuiz.getDescription());
-            quiz.setMaxMarks(updatedQuiz.getMaxMarks());
-            quiz.setNumberOfQuestions(updatedQuiz.getNumberOfQuestions());
+            quiz.setMaxMarks("10");
+            quiz.setNumberOfQuestions("10");
             quiz.setActive(updatedQuiz.isActive());
             quizRepository.save(quiz);
             return new ResponseEntity<>("Quiz updated successfully.", HttpStatus.OK);

@@ -5,6 +5,7 @@ import com.example.backend.Entity.*;
 import com.example.backend.Repository.CertificatRepository;
 import com.example.backend.Repository.CollaborateurRepository;
 import com.example.backend.Repository.GroupsRespository;
+import com.example.backend.Repository.UserRepository;
 import com.example.backend.Service.CertificatService;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BarcodeQRCode;
@@ -48,6 +49,8 @@ public class CertificatController {
     protected GroupsRespository groupsRepository;
     @Autowired
     private CollaborateurRepository userRepository;
+
+
     @Autowired
     private JavaMailSender javaMailSender;
 
@@ -121,7 +124,7 @@ public class CertificatController {
                         String formattedDate = certificat.getDate().format(formatter);
                         FixText(formattedDate, "poppins.regular.ttf", "Poppins", 280, 100, writer, 13);
 
-                        String str = "http://localhost:4200/student/profile/" + user.getId(); // Utiliser l'ID de l'utilisateur pour le lien QR
+                        String str = "http://localhost:4200/profile/" + user.getId(); // Utiliser l'ID de l'utilisateur pour le lien QR
                         BarcodeQRCode my_code = new BarcodeQRCode(str, 100, 100, null);
                         Image qr_image = my_code.getImage();
                         qr_image.setAbsolutePosition(70, 60);
@@ -131,7 +134,7 @@ public class CertificatController {
                         writer.close();
                         fo.close();
                         System.out.println("Done");
-                        String certificateLink = "http://localhost:4200/student/profile/" + user.getId();
+                        String certificateLink = "http://localhost:4200/profile/" + user.getId();
 
                         certificat.setPath(relativePath);
                         certificat.setUserOrGroupId(group.getId()); // ou certificat.setUserOrGroupId(group.getId());
@@ -160,6 +163,7 @@ public class CertificatController {
 
         return mois;
     }
+
 
 
     /***********user*********/
@@ -447,7 +451,7 @@ public class CertificatController {
                         String formattedDate = certificat.getDate().format(formatter);
                         FixText(formattedDate, "poppins.regular.ttf", "Poppins", 280, 100, writer, 13);
 
-                        String str = "http://localhost:4200/student/profile/" + user.getId(); // Utiliser l'ID de l'utilisateur pour le lien QR
+                        String str = "http://localhost:4200/profile/" + user.getId(); // Utiliser l'ID de l'utilisateur pour le lien QR
                         BarcodeQRCode my_code = new BarcodeQRCode(str, 100, 100, null);
                         Image qr_image = my_code.getImage();
                         qr_image.setAbsolutePosition(70, 60);
@@ -549,7 +553,7 @@ public class CertificatController {
                         String formattedDate = certificat.getDate().format(formatter);
                         FixText(formattedDate, "poppins.regular.ttf", "Poppins", 280, 100, writer, 13);
 
-                        String str = "http://localhost:4200/student/profile/" + user.getId(); // Utiliser l'ID de l'utilisateur pour le lien QR
+                        String str = "http://localhost:4200/profile/" + user.getId(); // Utiliser l'ID de l'utilisateur pour le lien QR
                         BarcodeQRCode my_code = new BarcodeQRCode(str, 100, 100, null);
                         Image qr_image = my_code.getImage();
                         qr_image.setAbsolutePosition(70, 60);
@@ -592,22 +596,7 @@ public class CertificatController {
     }
 
 
-    @GetMapping("/UserCertificates/{userId}")
-    public ResponseEntity<List<Certificat>> getUserCertificates(
-            @PathVariable Long userId
-    ) {
-        try {
-            Collaborateur user = userRepository.findById(userId)
-                    .orElseThrow(() -> new RuntimeException("User not found"));
 
-            List<Certificat> userCertificates = user.getCertificats();
-
-            return ResponseEntity.ok(userCertificates);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 
     @GetMapping("/UserCertificatesFormation/{userId}")
     public ResponseEntity<List<String>> getUserCertificatesFormationNames(@PathVariable Long userId) {

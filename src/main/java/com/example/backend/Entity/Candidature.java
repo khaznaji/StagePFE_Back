@@ -37,6 +37,7 @@ public class Candidature {
     private Quiz quiz;
     private int score;
     private int matchPercentage;
+    private double matchhy;
 
     @OneToOne(mappedBy = "candidature")
     @JsonIgnore // Ignore la sérialisation JSON de cet attribut

@@ -30,6 +30,8 @@ public  class User {
     private String prenom ;
     private Integer numtel ;
     private String matricule ;
+    private String faceImage; // Store the user's face image as a string in the database
+
     @Enumerated(EnumType.STRING)
     private Role role;
     @Enumerated(EnumType.STRING)
@@ -38,6 +40,7 @@ public  class User {
     private String password ;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH-ss-mm")
     private LocalDateTime date = LocalDateTime.now();
+
     @Value("#{false}")
     private boolean isActivated;
     @OneToOne(mappedBy = "collaborateur", cascade = CascadeType.ALL)
@@ -50,6 +53,9 @@ public  class User {
     @OneToOne(mappedBy = "manager" , cascade = CascadeType.ALL)
     @JsonIgnore
     private ManagerService managerService;
+    @OneToOne(mappedBy = "formateur", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Formateur formateur;
     private String image ;
 
     public Departement getDepartment() {

@@ -9,6 +9,6 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface FormateurRepository extends JpaRepository<Formateur,Long> {
-    @Query("SELECT c FROM Formateur c WHERE c.fomarteur.id = :formateur_id")
+    @Query("SELECT c FROM Formateur c WHERE c.formateur.id = :formateur_id")
     Optional<Formateur> findByFormateurFormateurId(@Param("formateur_id") Long formateur_id);
 }

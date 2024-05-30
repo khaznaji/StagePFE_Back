@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RestController
@@ -283,6 +284,13 @@ public class UserController {
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
+    }
+    @GetMapping("/allUsersByRole")
+    public List<User> allUsersByRole() {
+        List<User> allUsers = userService.getAllUsers();
+        return allUsers.stream()
+                .filter(user -> user.getRole() == Role.Formateur || user.getRole() == Role.Collaborateur || user.getRole() == Role.ManagerService)
+                .collect(Collectors.toList());
     }
 
     @PutMapping("/{userId}/activate")

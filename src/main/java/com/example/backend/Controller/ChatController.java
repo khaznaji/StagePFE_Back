@@ -48,7 +48,6 @@ public class ChatController {
         Chat ce = chatRepository.findByName(to);
         ce.setLastMessage(LocalDateTime.now());
         chatRepository.save(ce);
-
         simpMessagingTemplate.convertAndSend("/topic/messages/" + to, message);
 
     }
@@ -116,5 +115,6 @@ public class ChatController {
         String timeStamp = date + "-" + time;
         return timeStamp;
     }
+
 
 }

@@ -2,10 +2,7 @@ package com.example.backend.Controller;
 
 import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
-import com.example.backend.Repository.CandidatureRepository;
-import com.example.backend.Repository.CollaborateurRepository;
-import com.example.backend.Repository.ManagerServiceRepository;
-import com.example.backend.Repository.PosteRepository;
+import com.example.backend.Repository.*;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.CandidatureService;
 import com.example.backend.Service.EntretienService;
@@ -17,10 +14,15 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import javax.persistence.EntityNotFoundException;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,12 +47,15 @@ public class PosteController {
     private EntretienService entretienService;
     @Autowired
     private ManagerServiceRepository managerServiceRepository;
-
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private  NotificationRepository notificationRepository;
     @PostMapping("/create")
     public ResponseEntity<?> createPoste(
             @RequestParam("titre") String titre,
             @RequestParam("description") String description,
-            @RequestParam("nombrePostesDisponibles") int nombrePostesDisponibles,
+            @RequestParam("typeContrat") TypeContrat typeContrat,
             @RequestParam("competences") List<Competence> competences
     ){
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -62,13 +67,32 @@ public class PosteController {
         poste.setManagerService(managerService);
         poste.setDateCreation(LocalDate.now()); // Date de création du poste
         poste.setDepartement(managerService.getDepartment()); // Utilisez le département du manager de service
-        poste.setNombrePostesDisponibles(nombrePostesDisponibles);
+        poste.setTypeContrat(typeContrat);
         poste.setTitre(titre);
         poste.setDescription(description);
         poste.setPoste(EtatPoste.En_cours);
         poste.setCompetences(competences);
         System.out.println(poste);
         posteRepository.save(poste);
+
+        List<User> rhManagers = userRepository.findByRole(Role.ManagerRh);
+        if (rhManagers.isEmpty()) {
+            throw new EntityNotFoundException("RH Managers non trouvés");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expirationDateTime = now.plusDays(3);
+
+        for (User rhManager : rhManagers) {
+            Notification notification = new Notification();
+            notification.setMessage("A créer un nouveau poste : " + titre);
+            notification.setDateTime(now);
+            notification.setExpirationDateTime(expirationDateTime);
+            notification.setReceiver(rhManager);
+            notification.setNotifType(NotifType.Poste);
+            notification.setSender(userDetails.getUser()); // Assuming UserDetailsImpl has a method getUser() that returns the associated User entity
+            notificationRepository.save(notification);
+        }
 
         return new ResponseEntity<>(poste, HttpStatus.CREATED);
     }
@@ -112,7 +136,7 @@ public class PosteController {
                     "Veuillez trouver ci-dessous les détails de votre poste :\n\n" +
                     "Titre du poste : " + poste.getTitre() + "\n" +
                     "Description : " + poste.getDescription() + "\n\n" +
-                    "Nombre de postes disponibles : " + poste.getNombrePostesDisponibles() + "\n\n" +
+                    "Type de Contrat: " + poste.getTypeContrat() + "\n\n" +
                     "Cordialement,\n" +
                     "L'équipe 4You";
             emailService.sendEmail(managerEmail, subject, text);
@@ -123,53 +147,74 @@ public class PosteController {
         }
     }
 
-    @PostMapping("/postuler/{postId}")
-    public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long postId) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-        Long userId = userDetails.getId(); // ID de l'utilisateur
+@PostMapping("/postuler/{postId}")
+public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long postId) {
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+    Long userId = userDetails.getId(); // ID de l'utilisateur
 
-        // Utilisez la nouvelle méthode pour trouver le Collaborateur par l'ID de l'utilisateur
-        Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + userId));
-        Poste poste = posteRepository.findById(postId)
-                .orElseThrow(() -> new EntityNotFoundException("Poste non trouvé avec l'ID : " + postId));
+    Collaborateur collaborateur = collaborateurRepository.findByCollaborateurUserId(userId)
+            .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + userId));
 
-        // Vérifiez si le collaborateur a déjà postulé à ce poste
-        if (candidatureRepository.existsByCollaborateurAndPoste(collaborateur, poste)) {
-            Map<String, String> responseBody = new HashMap<>();
-            responseBody.put("error", "Vous avez déjà postulé à ce poste");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+    if (!collaborateur.isVerified()) {
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("error", "Vous devez être vérifié pour postuler à un poste");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseBody);
+    }
+
+    Poste poste = posteRepository.findById(postId)
+            .orElseThrow(() -> new EntityNotFoundException("Poste non trouvé avec l'ID : " + postId));
+
+    if (candidatureRepository.existsByCollaborateurAndPoste(collaborateur, poste)) {
+        Map<String, String> responseBody = new HashMap<>();
+        responseBody.put("error", "Vous avez déjà postulé à ce poste");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
+    }
+
+    try {
+        RestTemplate restTemplate = new RestTemplate();
+        String url = "http://localhost:5000/match";
+        Map<String, Long> requestBody = new HashMap<>();
+        requestBody.put("collaborateur_id", collaborateur.getId());
+        requestBody.put("job_id", postId);
+        ResponseEntity<Map> response = restTemplate.postForEntity(url, requestBody, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody != null && responseBody.containsKey("similarity_scores")) {
+                List<Double> similarityScores = (List<Double>) responseBody.get("similarity_scores");
+
+                // Enregistrer les scores de similarité dans la base de données
+                for (Double score : similarityScores) {
+                    int matchPercentageInt = (int) (score * 100); // Convertir en pourcentage
+
+                    Candidature candidature = new Candidature();
+                    candidature.setCollaborateur(collaborateur);
+                    candidature.setPoste(poste);
+                    candidature.setEtat(EN_ATTENTE);
+                    candidature.setDateCandidature(LocalDate.now());
+                    candidature.setMatchPercentage(matchPercentageInt); // Enregistrer le pourcentage de correspondance
+
+                    candidatureRepository.save(candidature);
+                }
+
+                Map<String, String> successResponse = new HashMap<>();
+                successResponse.put("message", "Vous avez postulé avec succès à ce poste");
+                return ResponseEntity.ok(successResponse);
+            } else {
+                // Gérer le cas où la réponse ne contient pas la clé "similarity_scores"
+            }
+        } else {
+            // Gérer le cas où la réponse n'est pas OK
         }
-
-        try {
-            // Calculer le pourcentage de correspondance
-
-            // Créer une nouvelle candidature
-            Candidature candidature = new Candidature();
-            candidature.setCollaborateur(collaborateur);
-            candidature.setPoste(poste);
-            candidature.setEtat(EN_ATTENTE); // Définissez l'état initial de la candidature
-            candidature.setDateCandidature(LocalDate.now()); // Définissez la date de candidature
-
-            // Sauvegardez la nouvelle candidature dans la base de données
-            candidatureRepository.save(candidature);
-            resumeMatcherService.calculateMatchPercentage(collaborateur.getId(),postId);
-
-            Map<String, String> responseBody = new HashMap<>();
-            responseBody.put("message", "Vous avez postulé avec succès à ce poste");
-            return ResponseEntity.ok(responseBody);
-        } catch (IOException e) {
-            e.printStackTrace();
-            // Gérer l'erreur
-            Map<String, String> responseBody = new HashMap<>();
-            responseBody.put("error", "Une erreur s'est produite lors du calcul du pourcentage de correspondance");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(responseBody);
-        }
+    } catch (RestClientException e) {
+        // Gérer l'erreur d'appel à l'API Flask
     }
 
 
-
+    // Gérer les autres erreurs si nécessaire
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+}
     @PutMapping("/updateRefus/{postId}")
     public ResponseEntity<?> updateRefus(@PathVariable Long postId) {
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
@@ -239,7 +284,7 @@ public class PosteController {
     public ResponseEntity<?> editPoste(@PathVariable Long postId,
                                        @RequestParam(required = false) String titre,
                                        @RequestParam(required = false) String description,
-                                       @RequestParam(required = false) Integer nombrePostesDisponibles) {
+                                       @RequestParam(required = false) TypeContrat typeContrat) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         Long managerServiceId = userDetails.getId(); // ID du ManagerService connecté
@@ -255,8 +300,8 @@ public class PosteController {
                 if (description != null) {
                     poste.setDescription(description);
                 }
-                if (nombrePostesDisponibles != null) {
-                    poste.setNombrePostesDisponibles(nombrePostesDisponibles);
+                if (typeContrat != null) {
+                    poste.setTypeContrat(typeContrat);
                 }
 
                 posteRepository.save(poste); // Sauvegardez le poste mis à jour
@@ -493,6 +538,7 @@ public class PosteController {
                 Map<String, String> candidatInfo = new HashMap<>();
                 candidatInfo.put("id", collaborateur.getId().toString()); // Ajouter l'ID du candidat
                 candidatInfo.put("etat", candidature.getEtat().toString());
+                candidatInfo.put("match", Integer.toString(candidature.getMatchPercentage()));
 
                 candidatInfo.put("nom", user.getNom());
                 candidatInfo.put("prenom", user.getPrenom());
@@ -595,6 +641,22 @@ public class PosteController {
             return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);
         }
     }
+    @PutMapping("/archivePoste/{postId}")
+    public ResponseEntity<?> ArchivePoste(@PathVariable Long postId) {
+        Optional<Poste> optionalPoste = posteRepository.findById(postId);
+
+        if (optionalPoste.isPresent()) {
+            Poste poste = optionalPoste.get();
+            poste.setPoste(EtatPoste.Archive); // Mettez à jour l'état du poste à Publie
+            posteRepository.save(poste); // Sauvegardez l'entité mise à jour
+
+            // Votre code pour envoyer un e-mail ou effectuer d'autres actions après l'approbation du poste
+
+            return new ResponseEntity<>(poste, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);
+        }
+    }
     @GetMapping("/getPostePublieCoteManagerRh")
     public ResponseEntity<List<Poste>> getPostePublieCoteManagerRh() {
 
@@ -623,6 +685,27 @@ public class PosteController {
         return ResponseEntity.ok(filteredPostes);
     }
 
+    @GetMapping("/posteArchive")
+    public ResponseEntity<List<Poste>> getPosteArchive() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        ManagerService managerService = userDetails.getUser().getManagerService();
+
+        if (managerService == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        List<Poste> postes = posteRepository.findAllByManagerService(managerService);
+        List<Poste> filteredPostes = postes.stream()
+                .filter(poste -> poste.getPoste() == EtatPoste.Archive)
+                .collect(Collectors.toList());
+
+        if (filteredPostes.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(filteredPostes);
+    }
 
 
 
@@ -700,6 +783,8 @@ public class PosteController {
             Map<String, String> candidatInfo = new HashMap<>();
             candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
             candidatInfo.put("etat", candidature.getEtat().toString());
+            candidatInfo.put("match", Integer.toString(candidature.getMatchPercentage()));
+
             candidatInfo.put("nom", user.getNom());
             candidatInfo.put("image", user.getImage());
             candidatInfo.put("score", String.valueOf(candidature.getScore())); // Convert int to String
@@ -838,6 +923,7 @@ public class PosteController {
 
         // Construisez le map pour contenir les informations
         Map<String, Object> collaborateurInfo = new HashMap<>();
+
         collaborateurInfo.put("nom", collaborateur.getCollaborateur().getNom());
         collaborateurInfo.put("prenom", collaborateur.getCollaborateur().getPrenom());
         collaborateurInfo.put("poste", collaborateur.getPoste());
@@ -861,6 +947,152 @@ public class PosteController {
         collaborateurInfo.put("evaluations", evaluations);
 
         return collaborateurInfo;
+    }
+    @Autowired
+    private FormationRepository formationRepository ;
+    @GetMapping("/userscertif/info/{id}")
+    public Map<String, Object> getUsersCertifInfoById(@PathVariable Long id) {
+        Collaborateur user = collaborateurRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("nom", user.getCollaborateur().getNom());
+        userInfo.put("prenom", user.getCollaborateur().getPrenom());
+        userInfo.put("mail", user.getCollaborateur().getEmail());
+        userInfo.put("num", user.getCollaborateur().getNumtel());
+
+
+            userInfo.put("isVerified", user.isVerified());
+            userInfo.put("id", user.getId());
+
+            userInfo.put("poste", user.getPoste());
+            userInfo.put("dateEntree", user.getDateEntree());
+            userInfo.put("departement", user.getDepartment().name());
+            userInfo.put("bio", user.getBio());
+            userInfo.put("image", user.getCollaborateur().getImage());
+            userInfo.put("resume", user.getResume());
+            // Récupérez les évaluations des compétences
+            List<Map<String, Object>> evaluations = user.getEvaluations().stream()
+                    .map(evaluation -> {
+                        Map<String, Object> evaluationInfo = new HashMap<>();
+                        evaluationInfo.put("competenceName", evaluation.getCompetence().getNom());
+                        evaluationInfo.put("evaluation", evaluation.getEvaluation());
+                        evaluationInfo.put("domaine", evaluation.getCompetence().getDomaine());
+
+                        return evaluationInfo;
+                    })
+                    .collect(Collectors.toList());
+
+            userInfo.put("evaluations", evaluations);
+            ManagerService managerService = user.getManagerService();
+            if (managerService != null) {
+                userInfo.put("managerName", managerService.getManager().getNom());
+                userInfo.put("managerPrenom", managerService.getManager().getPrenom());
+            }
+            // Ajoutez d'autres informations spécifiques aux collaborateurs si nécessaire
+
+
+        return userInfo;
+    }
+    @GetMapping("/users/info/{id}")
+    public Map<String, Object> getUsersInfoById(@PathVariable Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("id", user.getId());
+        userInfo.put("nom", user.getNom());
+        userInfo.put("prenom", user.getPrenom());
+        userInfo.put("role", user.getRole());
+
+        if (user.getRole() == Role.Collaborateur) {
+            Collaborateur collaborateur = user.getCollaborateur();
+            userInfo.put("isVerified", collaborateur.isVerified());
+
+            userInfo.put("poste", collaborateur.getPoste());
+            userInfo.put("dateEntree", collaborateur.getDateEntree());
+            userInfo.put("departement", collaborateur.getDepartment().name());
+            userInfo.put("bio", collaborateur.getBio());
+            userInfo.put("image", collaborateur.getCollaborateur().getImage());
+            userInfo.put("resume", collaborateur.getResume());
+            // Récupérez les évaluations des compétences
+            List<Map<String, Object>> evaluations = collaborateur.getEvaluations().stream()
+                    .map(evaluation -> {
+                        Map<String, Object> evaluationInfo = new HashMap<>();
+                        evaluationInfo.put("competenceName", evaluation.getCompetence().getNom());
+                        evaluationInfo.put("evaluation", evaluation.getEvaluation());
+                        evaluationInfo.put("domaine", evaluation.getCompetence().getDomaine());
+
+                        return evaluationInfo;
+                    })
+                    .collect(Collectors.toList());
+
+            userInfo.put("evaluations", evaluations);
+            ManagerService managerService = collaborateur.getManagerService();
+            if (managerService != null) {
+                userInfo.put("managerName", managerService.getManager().getNom());
+                userInfo.put("managerPrenom", managerService.getManager().getPrenom());
+            }
+            // Ajoutez d'autres informations spécifiques aux collaborateurs si nécessaire
+        } else if (user.getRole() == Role.ManagerService) {
+            ManagerService managerService = user.getManagerService();
+            userInfo.put("dateEntree", managerService.getDateEntree());
+            userInfo.put("departement", managerService.getDepartment().name());
+            userInfo.put("image", managerService.getManager().getImage());
+            userInfo.put("poste", managerService.getPoste());
+
+            userInfo.put("equipe", managerService.getCollaborateurs().stream()
+                    .map(collaborateur -> {
+                        Map<String, Object> collaborateurMap = new HashMap<>();
+                        collaborateurMap.put("nom", collaborateur.getCollaborateur().getNom() + " " + collaborateur.getCollaborateur().getPrenom());
+                        collaborateurMap.put("id", collaborateur.getId());
+                        collaborateurMap.put("image", collaborateur.getCollaborateur().getImage());
+
+                        return collaborateurMap;
+                    })
+                    .collect(Collectors.toList()));
+
+            userInfo.put("postesCrees", managerService.getPostes().stream()
+                    .filter(poste -> EtatPoste.Publie.equals(poste.getPoste())) // Filtre les postes avec l'état "publié"
+                    .map(poste -> {
+                        Map<String, Object> posteMap = new HashMap<>();
+                        posteMap.put("titre", poste.getTitre());
+                        posteMap.put("description", poste.getDescription());
+                        posteMap.put("typeContrat", poste.getTypeContrat());
+                        posteMap.put("nombreCandidats", poste.getCandidatures().size());
+
+                        posteMap.put("id", poste.getId());
+                        return posteMap;
+                    })
+                    .collect(Collectors.toList()));
+
+            userInfo.put("nombrePostesCrees", managerService.getPostes().size());
+
+            // Ajoutez d'autres informations spécifiques aux managers de service si nécessaire
+        } else if (user.getRole() == Role.Formateur) {
+            Formateur formateur = user.getFormateur();
+            userInfo.put("dateEntree", formateur.getDateEntree());
+            userInfo.put("departement", formateur.getSpecialite());
+            userInfo.put("image", formateur.getFormateur().getImage());
+            userInfo.put("formationCrees", formateur.getFormation().stream()
+                    .map(poste -> {
+                        Map<String, Object> posteMap = new HashMap<>();
+                        posteMap.put("id", poste.getId());
+                        posteMap.put("titre", poste.getTitle());
+                        posteMap.put("imagePoste", poste.getImage());
+                        posteMap.put("chapitre", poste.getChapitre());
+                        posteMap.put("duree", poste.getDuree());
+                        posteMap.put("departement", poste.getDepartment());
+
+                        return posteMap;
+                    })
+                    .collect(Collectors.toList()));
+            userInfo.put("nombreformationCrees", formateur.getFormation().size());
+
+            // Ajoutez d'autres informations spécifiques aux formateurs si nécessaire
+        }
+
+        return userInfo;
     }
 
     @GetMapping("/countCollaborateursEnAttente/{postId}")

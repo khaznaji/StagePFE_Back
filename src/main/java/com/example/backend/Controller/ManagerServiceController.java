@@ -2,8 +2,11 @@ package com.example.backend.Controller;
 
 import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
+import com.example.backend.Repository.FormationRepository;
 import com.example.backend.Repository.ManagerServiceRepository;
+import com.example.backend.Repository.PosteRepository;
 import com.example.backend.Repository.UserRepository;
+import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Security.verificationCode.CodeVerification;
 import com.example.backend.Security.verificationCode.CodeVerificationServiceImpl;
 import com.example.backend.Service.ManagerServiceService;
@@ -13,11 +16,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -88,10 +94,77 @@ public class ManagerServiceController {
         }
     }
 
+    @Autowired
+    private  PosteRepository posteRepository ;
+    @Autowired
+    private FormationRepository formationRepository ;
     @GetMapping("/members")
     public List<List<Map<String, Object>>> getMembersOfAuthenticatedManagerService() {
         return managerServiceService.getMembers();
     }
+    @GetMapping("/collaborateurs/count")
+    public long getNombreCollaborateurs() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long managerServiceId = userDetails.getId();
+        ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
+                .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
+
+        return managerService.getCollaborateurs().size();
+    }
+
+
+    @GetMapping("/postesPublies/count")
+    public long getNombrePostesPublies() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long managerServiceId = userDetails.getId();
+        ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
+                .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
+
+        return managerService.getNombrePostesPublies();
+    }
+
+    @GetMapping("/demandesFormation/count")
+    public long getNombreDemandesFormation() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long managerServiceId = userDetails.getId();
+        ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
+                .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
+
+        return managerService.getNombreDemandesFormation();
+    }
+
+    @GetMapping("/postesApprouves/count")
+    public long getNombrePostesApprouves() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long managerServiceId = userDetails.getId();
+        ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
+                .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
+
+        return managerService.getNombrePostesApprouves();
+    }
+    @GetMapping("/top-three-competences")
+    public ResponseEntity<Map<String, List<String>>> getTopThreeCompetencesByCategory() {
+        try {
+            Map<String, List<String>> topThreeCompetencesByCategory = managerServiceService.getTopThreeCompetencesByCategory();
+            return ResponseEntity.ok(topThreeCompetencesByCategory);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    @GetMapping("/postesWithCandidatureCount")
+    public ResponseEntity<List<Map<String, Object>>> getPostesWithCandidatureCount() {
+        try {
+            List<Map<String, Object>> postesWithCandidatureCount = managerServiceService.getPostesWithCandidatureCount();
+            return ResponseEntity.ok(postesWithCandidatureCount);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
 
 
 }

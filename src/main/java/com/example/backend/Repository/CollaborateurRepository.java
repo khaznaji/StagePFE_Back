@@ -2,6 +2,7 @@ package com.example.backend.Repository;
 
 import com.example.backend.Entity.Collaborateur;
 import com.example.backend.Entity.ManagerService;
+import com.example.backend.Entity.User;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,5 +17,6 @@ public interface CollaborateurRepository  extends JpaRepository<Collaborateur,Lo
     @Query("SELECT c FROM Collaborateur c WHERE c.collaborateur.id = :userId")
     Optional<Collaborateur> findByCollaborateurUserId(@Param("userId") Long userId);
     List<Collaborateur> findByManagerService(ManagerService managerService);
+    List<Collaborateur> findByGroupsId(Long groupId);
 
 }

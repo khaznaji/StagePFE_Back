@@ -20,16 +20,16 @@ public class Formateur {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id ;
-    @OneToOne()
-    @JoinColumn(name = "formateur_id")
+    @OneToOne
+    @JoinColumn(name = "user_id") // Nommez cette colonne selon votre structure de base de données
     @JsonIgnore
-    private User fomarteur;
+    private User formateur;
     private String specialite ;
     @DateTimeFormat(pattern = "dd/MM/yyyy")
     private LocalDate dateEntree;
-    @OneToOne()
+    @OneToMany(mappedBy = "formateur")
     @JsonIgnore
-    private Formation formation;
+    private List<Formation> formation;
     @OneToMany(mappedBy = "formateur")
     @JsonIgnore
     private List<Groups> groups;

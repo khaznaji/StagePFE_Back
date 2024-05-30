@@ -1,10 +1,7 @@
 package com.example.backend.Controller;
 
 import com.example.backend.Entity.*;
-import com.example.backend.Repository.CollaborateurRepository;
-import com.example.backend.Repository.FormateurRepository;
-import com.example.backend.Repository.FormationRepository;
-import com.example.backend.Repository.ParticipationFormationRepository;
+import com.example.backend.Repository.*;
 import com.example.backend.Security.services.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -38,6 +35,10 @@ public class FormationController {
     CollaborateurRepository collaborateurRepository;
     @Autowired
     FormationRepository formationRepository;
+    @Autowired
+    UserRepository userRepository;
+    @Autowired
+    NotificationRepository notificationRepository;
     @PostMapping("/create")
     public ResponseEntity<?> createFormation(
             @RequestParam("title") String title,
@@ -101,7 +102,26 @@ public class FormationController {
             formation.setFormateur(managerService);
 
             Formation savedFormation =formationRepository.save(formation);
-            ;
+
+            List<User> rhManagers = userRepository.findByRole(Role.Collaborateur);
+            if (rhManagers.isEmpty()) {
+                throw new EntityNotFoundException("RH Managers non trouvés");
+            }
+
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime expirationDateTime = now.plusDays(3);
+
+            for (User rhManager : rhManagers) {
+                Notification notification = new Notification();
+                notification.setMessage("Une Nouvelle Formation a été crée : " + title);
+                notification.setDateTime(now);
+                notification.setExpirationDateTime(expirationDateTime);
+                notification.setReceiver(rhManager);
+                notification.setNotifType(NotifType.Poste);
+                notification.setSender(userDetails.getUser()); // Assuming UserDetailsImpl has a method getUser() that returns the associated User entity
+                notificationRepository.save(notification);
+            }
+
 
             return new ResponseEntity<>(savedFormation, HttpStatus.CREATED);
         } catch (IOException e) {
@@ -208,8 +228,8 @@ public class FormationController {
                 .peek(formation -> {
                     Formateur formateur = formation.getFormateur();
                     if (formateur != null) {
-                        formation.setFormateurName(formateur.getFomarteur().getNom() + " " + formateur.getFomarteur().getPrenom() ); // Assurez-vous d'avoir une méthode getFormateurName() dans la classe Formateur
-                        formation.setFormateurImage(formateur.getFomarteur().getImage()  ); // Assurez-vous d'avoir une méthode getFormateurName() dans la classe Formateur
+                        formation.setFormateurName(formateur.getFormateur().getNom() + " " + formateur.getFormateur().getPrenom() ); // Assurez-vous d'avoir une méthode getFormateurName() dans la classe Formateur
+                        formation.setFormateurImage(formateur.getFormateur().getImage()  ); // Assurez-vous d'avoir une méthode getFormateurName() dans la classe Formateur
                     }
                 })
                 .collect(Collectors.toList());
@@ -267,8 +287,8 @@ public class FormationController {
                 // Récupérez le nom, le prénom et l'image du formateur
 
                 // Assignez les informations du formateur à la formation
-                formation.setFormateurName(formateur.getFomarteur().getNom() + " " + formateur.getFomarteur().getPrenom());
-                formation.setFormateurImage(formateur.getFomarteur().getImage()); // Vous devrez peut-être ajuster cela en fonction de la structure de votre objet Formateur
+                formation.setFormateurName(formateur.getFormateur().getNom() + " " + formateur.getFormateur().getPrenom());
+                formation.setFormateurImage(formateur.getFormateur().getImage()); // Vous devrez peut-être ajuster cela en fonction de la structure de votre objet Formateur
 
 
                 // Renvoyez la formation avec les informations du formateur dans la réponse
@@ -316,8 +336,8 @@ public class FormationController {
             Formateur formateur = formation.getFormateur(); // Récupérez l'objet Formateur associé à la formation
             if (formateur != null) {
                 // Assignez le nom et le prénom du formateur à la formation
-                formation.setFormateurName(formateur.getFomarteur().getNom() + " " + formateur.getFomarteur().getPrenom());
-                formation.setFormateurImage(formateur.getFomarteur().getImage()); // Vous devrez peut-être ajuster cela en fonction de la structure de votre objet Formateur
+                formation.setFormateurName(formateur.getFormateur().getNom() + " " + formateur.getFormateur().getPrenom());
+                formation.setFormateurImage(formateur.getFormateur().getImage()); // Vous devrez peut-être ajuster cela en fonction de la structure de votre objet Formateur
             }
         }
 
