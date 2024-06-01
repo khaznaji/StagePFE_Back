@@ -34,7 +34,6 @@ public class QuizController {
         return posteRepository.findById(postId).map(poste -> {
             quiz.setPoste(poste);
             quiz.setMaxMarks("10");
-            quiz.setNumberOfQuestions("10");
             quizRepository.save(quiz);
             Map<String, String> response = new HashMap<>();
             response.put("success", "Quiz added successfully to Poste with ID: " + postId);
@@ -64,8 +63,6 @@ public class QuizController {
             quiz.setTitle(updatedQuiz.getTitle());
             quiz.setDescription(updatedQuiz.getDescription());
             quiz.setMaxMarks("10");
-            quiz.setNumberOfQuestions("10");
-            quiz.setActive(updatedQuiz.isActive());
             quizRepository.save(quiz);
             return new ResponseEntity<>("Quiz updated successfully.", HttpStatus.OK);
         }).orElseGet(() -> new ResponseEntity<>("Quiz with ID: " + quizId + " not found.", HttpStatus.NOT_FOUND));

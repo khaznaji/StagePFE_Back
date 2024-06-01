@@ -14,6 +14,8 @@ import java.util.Set;
 public class QuestionServiceImpl implements QuestionService {
     @Autowired
     private QuestionRepository questionRepository;
+    @Autowired
+    private QuizService quizService;
 
     @Override
     public Question addQuestion(Question question) {
@@ -42,6 +44,15 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public void deleteQuestion(Long quesid) {
-        questionRepository.deleteById(quesid);
+        Question question = getQuestion(quesid);
+        if (question != null) {
+            Quiz quiz = question.getQuiz();
+            if (quiz != null) {
+                quiz.decrementNumberOfQuestions();
+                quizService.addQuiz(quiz);
+            }
+            questionRepository.delete(question);
+        }
     }
+
 }

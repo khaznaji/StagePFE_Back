@@ -631,16 +631,27 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
 
         if (optionalPoste.isPresent()) {
             Poste poste = optionalPoste.get();
-            poste.setPoste(EtatPoste.Publie); // Mettez à jour l'état du poste à Publie
-            posteRepository.save(poste); // Sauvegardez l'entité mise à jour
 
-            // Votre code pour envoyer un e-mail ou effectuer d'autres actions après l'approbation du poste
+            // Vérifiez si des tests associés à ce poste sont actifs
+            boolean testsActifs = poste.getQuizzes().stream().anyMatch(Quiz::isActive);
 
-            return new ResponseEntity<>(poste, HttpStatus.OK);
+            // Si aucun test n'est actif, publiez le poste
+            if (testsActifs) {
+                poste.setPoste(EtatPoste.Publie); // Mettez à jour l'état du poste à Publie
+                posteRepository.save(poste); // Sauvegardez l'entité mise à jour
+
+                // Votre code pour envoyer un e-mail ou effectuer d'autres actions après l'approbation du poste
+
+                return new ResponseEntity<>(poste, HttpStatus.OK);
+            } else {
+                // Sinon, renvoyez un message d'erreur
+                return new ResponseEntity<>("Impossible de publier le poste car il y a un ou plusieurs test qui ne contiennent pas de questions.", HttpStatus.BAD_REQUEST);
+            }
         } else {
             return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);
         }
     }
+
     @PutMapping("/archivePoste/{postId}")
     public ResponseEntity<?> ArchivePoste(@PathVariable Long postId) {
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
@@ -784,6 +795,7 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
             candidatInfo.put("candidature_id", candidature.getId().toString()); // ID de la candidature
             candidatInfo.put("etat", candidature.getEtat().toString());
             candidatInfo.put("match", Integer.toString(candidature.getMatchPercentage()));
+
 
             candidatInfo.put("nom", user.getNom());
             candidatInfo.put("image", user.getImage());
@@ -1066,7 +1078,9 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
                     })
                     .collect(Collectors.toList()));
 
-            userInfo.put("nombrePostesCrees", managerService.getPostes().size());
+            userInfo.put("nombrePostesCrees", managerService.getPostes().stream()
+                    .filter(poste -> poste.getPoste() == EtatPoste.Publie) // Filtrer les postes avec un état "publié"
+                    .count());
 
             // Ajoutez d'autres informations spécifiques aux managers de service si nécessaire
         } else if (user.getRole() == Role.Formateur) {

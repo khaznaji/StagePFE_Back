@@ -9,11 +9,15 @@ import com.example.backend.Service.EntretienService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import javax.mail.MessagingException;
+import javax.mail.internet.MimeMessage;
 import javax.persistence.EntityNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -25,6 +29,8 @@ import java.util.stream.Collectors;
 public class EntretienController {
     @Autowired
     private EntretienService entretienService;
+    @Autowired
+    private JavaMailSender emailSender;
     @Autowired
 
     private CandidatureRepository candidatureRepository;
@@ -82,6 +88,7 @@ public class EntretienController {
                     // Ajoutez les détails du collaborateur à la réponse
                     entretienAvecCollaborateur.put("nomCollaborateur", collaborateur.getCollaborateur().getNom());
                     entretienAvecCollaborateur.put("prenomCollaborateur", collaborateur.getCollaborateur().getPrenom());
+                    entretienAvecCollaborateur.put("collaborateurId", collaborateur.getCollaborateur().getId());
 
             }
             return new ResponseEntity<>(entretienAvecCollaborateur, HttpStatus.OK);
@@ -92,12 +99,13 @@ public class EntretienController {
 
 
     @PostMapping("/create")
-    public ResponseEntity<String> createEntretien(
+    public ResponseEntity<Map<String, Object>> createEntretien(
             @RequestParam Long postId,
             @RequestParam Long candidatureId,
             @RequestParam String dateEntretien,
             @RequestParam String heureDebut,
             @RequestParam String heureFin) {
+        Map<String, Object> response = new HashMap<>();
         try {
             // Créer l'entretien pour le poste et la candidature donnés
             entretienService.createEntretienForPosteAndCandidature(postId, candidatureId, dateEntretien, heureDebut, heureFin);
@@ -108,16 +116,24 @@ public class EntretienController {
                 Candidature candidature = optionalCandidature.get();
                 candidature.setEtat(EtatPostulation.Entretien);
                 candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
-                return ResponseEntity.ok("Entretien créé avec succès et état de la candidature mis à jour à 'Entretien'");
+
+                response.put("message", "Entretien créé avec succès et état de la candidature mis à jour à 'Entretien'");
+                response.put("status", "success");
+                return ResponseEntity.ok(response);
             } else {
                 // Si la candidature n'est pas trouvée, renvoyer une réponse de mauvaise requête
-                return ResponseEntity.badRequest().body("Candidature non trouvée pour l'ID : " + candidatureId);
+                response.put("message", "Candidature non trouvée pour l'ID : " + candidatureId);
+                response.put("status", "error");
+                return ResponseEntity.badRequest().body(response);
             }
         } catch (IllegalArgumentException e) {
             // En cas d'erreur, renvoyer une réponse de mauvaise requête avec le message d'erreur
-            return ResponseEntity.badRequest().body(e.getMessage());
+            response.put("message", e.getMessage());
+            response.put("status", "error");
+            return ResponseEntity.badRequest().body(response);
         }
     }
+
 
     @GetMapping("/poste/{posteId}")
     public ResponseEntity<List<Map<String, Object>>> getEntretiensByPosteId(@PathVariable Long posteId) {
@@ -143,19 +159,25 @@ public class EntretienController {
     }
 
     @PutMapping("/{id}/update")
-    public ResponseEntity<String> updateEntretien(
+    public ResponseEntity<Map<String, Object>> updateEntretien(
             @PathVariable Long id,
             @RequestParam Long candidatureId,
             @RequestParam String dateEntretien,
             @RequestParam String heureDebut,
             @RequestParam String heureFin) {
+        Map<String, Object> response = new HashMap<>();
         try {
             entretienService.updateEntretien(id, candidatureId, dateEntretien, heureDebut, heureFin);
-            return ResponseEntity.ok("Entretien updated successfully");
+            response.put("message", "Entretien updated successfully");
+            response.put("status", "success");
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            response.put("message", e.getMessage());
+            response.put("status", "error");
+            return ResponseEntity.badRequest().body(response);
         }
     }
+
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEntretien(@PathVariable Long id) {
@@ -262,18 +284,61 @@ public class EntretienController {
     }
 
 
-
     @PutMapping("/{id}/noter")
     public ResponseEntity<String> noterEntretien(
             @PathVariable Long id,
             @RequestParam int note,
             @RequestParam String commentaire) {
         try {
+            Entretien entretien = entretienService.getEntretienById(id).orElseThrow(() -> new IllegalArgumentException("Entretien non trouvé"));
+
+            // Noter l'entretien
             entretienService.noterEntretien(id, note, commentaire);
+
+            // Envoyer un email au candidat (collaborateur)
+            String objet = "";
+            String contenu = "";
+            String emailCandidat = "";
+            if (entretien.getTypeEntretien() == TypeEntretien.Annuel) {
+                objet = "Résultat entretien annuel";
+                contenu = "Bonjour,\n\nNous tenons à vous informer que votre entretien annuel a été évalué.\n\n" +
+                        "Voici les détails de l'évaluation :\n\n" +
+                        "- Note : " + note + "\n" +
+                        "- Commentaire : " + commentaire + "\n\n" +
+                        "Nous vous remercions pour votre participation et votre engagement.\n\n" +
+                        "Cordialement,\n[4You]";
+                emailCandidat = entretien.getCollaborateurs().getCollaborateur().getEmail(); // Récupérer l'e-mail du collaborateur pour un entretien annuel
+            } else if (entretien.getTypeEntretien() == TypeEntretien.Technique) {
+                objet = "Résultat entretien technique";
+                // Inclure le titre du poste si l'entretien est technique
+                String titrePoste = entretien.getPoste().getTitre(); // Récupérer le titre du poste
+                contenu = "Bonjour,\n\nNous vous informons que votre entretien technique pour le poste de \"" + titrePoste + "\" a été évalué.\n\n" +
+                        "Voici les détails de l'évaluation :\n\n" +
+                        "- Note : " + note + "\n" +
+                        "- Commentaire : " + commentaire + "\n\n" +
+                        "Nous vous remercions pour votre intérêt pour notre entreprise.\n\n" +
+                        "Cordialement,\n[4You]";                emailCandidat = entretien.getCandidature().getCollaborateur().getCollaborateur().getEmail(); // Récupérer l'e-mail du collaborateur pour un entretien technique
+            }
+
+            sendEmail(emailCandidat, objet, contenu);
+
             return ResponseEntity.ok("Entretien noté avec succès");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    private void sendEmail(String to, String subject, String text) {
+        MimeMessage message = emailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message);
+        try {
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text);
+        } catch (MessagingException e) {
+            e.printStackTrace();
+        }
+        emailSender.send(message);
     }
 
     @GetMapping("/EntretiensSpecifiques/{postId}")
@@ -303,22 +368,30 @@ public class EntretienController {
         return new ResponseEntity<>(entretiensInfo, HttpStatus.OK);
     }
     @PostMapping("/ajoutAnnuel")
-    public ResponseEntity<String> ajoutEntretienAnnuel(@RequestParam Long collaborateurId,
-                                                          @RequestParam String dateEntretien,
-                                                          @RequestParam String heureDebut,
-                                                          @RequestParam String heureFin) {
+    public ResponseEntity<Map<String, String>> ajoutEntretienAnnuel(@RequestParam Long collaborateurId,
+                                                                    @RequestParam String dateEntretien,
+                                                                    @RequestParam String heureDebut,
+                                                                    @RequestParam String heureFin) {
         entretienService.ajoutEntretienAnnuel(collaborateurId, dateEntretien, heureDebut, heureFin);
-        return ResponseEntity.status(HttpStatus.CREATED).body("Entretien technique ajouté avec succès.");
+
+        // Construction de la réponse
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Entretien technique ajouté avec succès.");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
     @PutMapping("/updateAnnuel/{entretienId}")
-    public ResponseEntity<String> updateEntretienAnnuel(@PathVariable Long entretienId,
+    public ResponseEntity<Map<String, String>> updateEntretienAnnuel(@PathVariable Long entretienId,
                                                            @RequestParam String dateEntretien,
                                                            @RequestParam String heureDebut,
                                                            @RequestParam String heureFin) {
         entretienService.updateEntretienAnnuel(entretienId, dateEntretien, heureDebut, heureFin);
-        return ResponseEntity.ok("Entretien technique mis à jour avec succès.");
-    }
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Entretien technique modifie avec succès.");
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);    }
     @DeleteMapping("/deleteAnnuel/{entretienId}")
     public ResponseEntity<String> deleteEntretienTechnique(@PathVariable Long entretienId) {
         entretienService.deleteEntretien(entretienId);

@@ -26,7 +26,7 @@ public class Entretien {
     @JoinColumn(name = "poste_id")
     private Poste poste;
     private String roomId;
-    private String commentaire;
+    private String commentaire = "Aucun Commentaire";
     private int note;
     @Enumerated(EnumType.STRING)
     private EtatEntretien etatEntretien;

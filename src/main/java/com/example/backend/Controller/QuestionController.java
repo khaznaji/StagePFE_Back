@@ -45,13 +45,16 @@ public class QuestionController {
         return ResponseEntity.ok(question1);
     }
     @PostMapping("/add-to-quiz/{quizId}")
-    public Question addQuestionToQuiz(@PathVariable Long quizId, @RequestBody Question question) {
+    public ResponseEntity<?> addQuestionToQuiz(@PathVariable Long quizId, @RequestBody Question question) {
         Quiz quiz = quizService.getQuizById(quizId);
         if (quiz != null) {
             question.setQuiz(quiz);
-            return questionService.addQuestion(question);
+            Question savedQuestion = questionService.addQuestion(question);
+            quiz.incrementNumberOfQuestions();
+            quiz.setActive(quiz.isActive());
+            quizService.addQuiz(quiz);  // Sauvegarder les changements dans le quiz
+            return ResponseEntity.ok(savedQuestion);
         } else {
-            // Gérer le cas où le quiz n'est pas trouvé
             throw new QuizNotFoundException("Quiz not found with ID: " + quizId);
         }
     }
@@ -87,7 +90,19 @@ public class QuestionController {
 
     @DeleteMapping("/delete/{quesid}")
     public void deleteQuestion(@PathVariable("quesid") Long quesid) {
+        Question deletedQuestion = questionService.getQuestion(quesid);
+        Quiz quiz = deletedQuestion.getQuiz();
+
+        // Supprimer la question
         questionService.deleteQuestion(quesid);
+
+        // Vérifier si le quiz n'a plus de questions
+        if (quiz.getQuestions().isEmpty()) {
+            // Si le quiz n'a plus de questions, définissez active sur false
+            quiz.setActive(false);
+            quizService.addQuiz(quiz); // Sauvegardez les modifications du quiz
+        }
     }
+
 
 }

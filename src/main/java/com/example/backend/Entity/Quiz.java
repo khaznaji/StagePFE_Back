@@ -26,7 +26,7 @@ public class Quiz {
 
     private String maxMarks;
 
-    private String numberOfQuestions;
+    private String numberOfQuestions = "0"; // Initialiser à zéro
 
     private boolean active = false;
 
@@ -107,5 +107,16 @@ public class Quiz {
     public void setQuestions(Set<Question> questions) {
         this.questions = questions;
     }
+    public void incrementNumberOfQuestions() {
+        int currentNumberOfQuestions = Integer.parseInt(this.numberOfQuestions);
+        this.numberOfQuestions = Integer.toString(currentNumberOfQuestions + 1);
+    }
+    public void decrementNumberOfQuestions() {
+        int currentNumberOfQuestions = Integer.parseInt(this.numberOfQuestions);
+        if (currentNumberOfQuestions > 0) {
+            this.numberOfQuestions = Integer.toString(currentNumberOfQuestions - 1);
+        }
+    }
+
 }
 

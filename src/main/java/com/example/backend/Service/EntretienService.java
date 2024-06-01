@@ -200,6 +200,7 @@ public class EntretienService {
                     if (collaborateur != null) {
                         entretienAvecCollaborateur.put("nomCollaborateur", collaborateur.getCollaborateur().getNom());
                         entretienAvecCollaborateur.put("prenomCollaborateur", collaborateur.getCollaborateur().getPrenom());
+                        entretienAvecCollaborateur.put("collaborateurId", collaborateur.getCollaborateur().getId());
 
                 }
                 entretiensAvecCollaborateurs.add(entretienAvecCollaborateur);
@@ -241,6 +242,17 @@ public class EntretienService {
         }
 
         return entretiensAvecCollaborateurs;
+    }
+    public TypeEntretien getTypeEntretien(Long id) {
+        Optional<Entretien> optionalEntretien = getEntretienById(id);
+        Entretien entretien = optionalEntretien.orElseThrow(() -> new IllegalArgumentException("Entretien non trouvé"));
+
+        // Logique pour déterminer le type d'entretien en fonction de l'entretien récupéré
+        if (entretien.getTypeEntretien() == TypeEntretien.Annuel) {
+            return TypeEntretien.Annuel;
+        } else {
+            return TypeEntretien.Technique;
+        }
     }
 
 
