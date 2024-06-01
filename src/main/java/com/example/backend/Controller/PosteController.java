@@ -580,7 +580,6 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
                     candidatsInfo.add(candidatInfo);
                 }
             }
-
             return new ResponseEntity<>(candidatsInfo, HttpStatus.OK);
         } else {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -1165,7 +1164,7 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
         }
     }
     @PutMapping("/{candidatureId}/score")
-    public ResponseEntity<?> soumettreScoreQuiz(@PathVariable Long candidatureId, @RequestParam int score) {
+    public ResponseEntity<Map<String, Object>> soumettreScoreQuiz(@PathVariable Long candidatureId, @RequestParam int score) {
         Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
         if (optionalCandidature.isPresent()) {
             Candidature candidature = optionalCandidature.get();
@@ -1178,9 +1177,25 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
             // Mettre à jour le score de la candidature
             candidature.setScore(score);
 
+            // Créer un objet Map pour contenir la réponse
+            Map<String, Object> response = new HashMap<>();
+
             // Vérifier si le score est supérieur ou égal au seuil pour passer à l'état Entretien
             if (score >= passingThreshold) {
+                String candidatEmail = candidature.getCollaborateur().getCollaborateur().getEmail();
+                String subject = "Réponse à votre candidature pour le poste " + candidature.getPoste().getTitre();
+                String body = "Cher/Chère " + candidature.getCollaborateur().getCollaborateur().getNom() + ",\n\n" +
+                        "Nous tenons à vous remercier pour l'intérêt que vous avez manifesté pour le poste de " +
+                        candidature.getPoste().getTitre() + " au sein de notre entreprise. Après une première évaluation de votre candidature, nous sommes ravis de vous informer que vous avez été présélectionné(e) pour un entretien technique.\n\n" +
+                        "Cet entretien est l'occasion pour nous de mieux comprendre vos compétences techniques et de discuter de votre expérience en détail. Vous recevrez bientôt une invitation avec les détails de cet entretien, y compris la date, l'heure et les modalités.\n\n" +
+                        "Nous sommes impatients de vous rencontrer et de discuter de la manière dont vous pouvez contribuer à notre équipe. Si vous avez des questions ou des disponibilités spécifiques, n'hésitez pas à nous en informer.\n\n" +
+                        "Nous vous remercions encore une fois pour l'intérêt que vous portez à notre entreprise et nous réjouissons de notre prochaine rencontre.\n\n" +
+                        "Cordialement,\n\n" +
+                        "L'équipe de recrutement de 4YOU";
+
+                emailService.sendEmail(candidatEmail, subject, body);
                 candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN);
+                response.put("message", "Le score est suffisant pour passer à l'état Entretien.");
             } else {
                 candidature.setEtat(EtatPostulation.REFUSEE);
                 // Envoyer un e-mail de refus au candidat
@@ -1197,15 +1212,24 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
 
                 System.out.println("E-mail de refus envoyé à : " + candidatEmail);
 
+                response.put("message", "Le score est insuffisant. Un e-mail de refus a été envoyé.");
             }
 
-            candidatureRepository.save(candidature); // Enregistrer la candidature mise à jour avec le score et l'état
-            return ResponseEntity.ok("Score enregistré avec succès pour la candidature avec l'ID : " + candidatureId);
+            // Enregistrer la candidature mise à jour avec le score et l'état
+            candidatureRepository.save(candidature);
+
+            // Ajouter les informations de la candidature à la réponse
+            response.put("candidatureId", candidatureId);
+            response.put("score", score);
+            response.put("etat", candidature.getEtat());
+
+            return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.notFound().build();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Candidature non trouvée");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
         }
     }
-
     @PutMapping("/candidatures/accepter")
     public void accepterCandidatures(@RequestBody List<Long> candidatureIds) {
         candidatureService.accepterCandidatures(candidatureIds);

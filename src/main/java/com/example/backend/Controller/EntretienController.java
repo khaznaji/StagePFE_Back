@@ -1,9 +1,7 @@
 package com.example.backend.Controller;
+import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
-import com.example.backend.Repository.CandidatureRepository;
-import com.example.backend.Repository.CollaborateurRepository;
-import com.example.backend.Repository.ManagerServiceRepository;
-import com.example.backend.Repository.PosteRepository;
+import com.example.backend.Repository.*;
 import com.example.backend.Security.services.UserDetailsImpl;
 import com.example.backend.Service.EntretienService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,7 +95,10 @@ public class EntretienController {
         }
     }
 
-
+    @Autowired
+    private MailConfig emailService;
+    @Autowired
+    private PosteRepository userRepository;
     @PostMapping("/create")
     public ResponseEntity<Map<String, Object>> createEntretien(
             @RequestParam Long postId,
@@ -116,6 +117,26 @@ public class EntretienController {
                 Candidature candidature = optionalCandidature.get();
                 candidature.setEtat(EtatPostulation.Entretien);
                 candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
+
+                // Récupérer les détails du collaborateur et du manager
+                User collaborateur = candidature.getCollaborateur().getCollaborateur();
+                User manager = userRepository.findManagerByPostId(postId);
+
+                // Envoyer un email au collaborateur
+                String collaborateurEmail = collaborateur.getEmail();
+                String collaborateurSubject = "Entretien technique programmé";
+                String collaborateurText = "Bonjour " + collaborateur.getCollaborateur().getCollaborateur().getNom()+ ",\n\n" +
+                        "Vous avez un entretien technique prévu le " + dateEntretien + " de " + heureDebut + " à " + heureFin +
+                        " avec " + manager.getManagerService().getManager().getNom() + ".\n\nCordialement,\nVotre équipe RH";
+                emailService.sendEmail(collaborateurEmail, collaborateurSubject, collaborateurText);
+
+                // Envoyer un email au manager
+                String managerEmail = manager.getEmail();
+                String managerSubject = "Entretien technique avec un collaborateur";
+                String managerText = "Bonjour " + manager.getManagerService().getManager().getNom() + ",\n\n" +
+                        "Vous avez un entretien technique prévu le " + dateEntretien + " de " + heureDebut + " à " + heureFin +
+                        " avec " + collaborateur.getCollaborateur().getCollaborateur().getNom() + ".\n\nCordialement,\nVotre équipe RH";
+                emailService.sendEmail(managerEmail, managerSubject, managerText);
 
                 response.put("message", "Entretien créé avec succès et état de la candidature mis à jour à 'Entretien'");
                 response.put("status", "success");

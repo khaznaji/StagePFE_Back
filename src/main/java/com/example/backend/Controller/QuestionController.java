@@ -51,7 +51,7 @@ public class QuestionController {
             question.setQuiz(quiz);
             Question savedQuestion = questionService.addQuestion(question);
             quiz.incrementNumberOfQuestions();
-            quiz.setActive(quiz.isActive());
+            quiz.setActive(true);
             quizService.addQuiz(quiz);  // Sauvegarder les changements dans le quiz
             return ResponseEntity.ok(savedQuestion);
         } else {
