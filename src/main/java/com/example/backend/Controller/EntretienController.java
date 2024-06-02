@@ -108,7 +108,6 @@ public class EntretienController {
             @RequestParam String heureFin) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Créer l'entretien pour le poste et la candidature donnés
             entretienService.createEntretienForPosteAndCandidature(postId, candidatureId, dateEntretien, heureDebut, heureFin);
             Optional<Candidature> optionalCandidature = candidatureRepository.findById(candidatureId);
 
@@ -116,9 +115,7 @@ public class EntretienController {
                 // Mettre à jour l'état de la candidature à "Entretien"
                 Candidature candidature = optionalCandidature.get();
                 candidature.setEtat(EtatPostulation.Entretien);
-                candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
-
-                // Récupérer les détails du collaborateur et du manager
+                candidatureRepository.save(candidature);
                 User collaborateur = candidature.getCollaborateur().getCollaborateur();
                 User manager = userRepository.findManagerByPostId(postId);
 
@@ -189,6 +186,7 @@ public class EntretienController {
         Map<String, Object> response = new HashMap<>();
         try {
             entretienService.updateEntretien(id, candidatureId, dateEntretien, heureDebut, heureFin);
+
             response.put("message", "Entretien updated successfully");
             response.put("status", "success");
             return ResponseEntity.ok(response);
@@ -306,15 +304,16 @@ public class EntretienController {
 
 
     @PutMapping("/{id}/noter")
-    public ResponseEntity<String> noterEntretien(
+    public ResponseEntity<Map<String, Object>> noterEntretien(
             @PathVariable Long id,
-            @RequestParam int note,
-            @RequestParam String commentaire) {
+            @RequestParam int note
+    ) {
+        Map<String, Object> responseBody = new HashMap<>();
         try {
             Entretien entretien = entretienService.getEntretienById(id).orElseThrow(() -> new IllegalArgumentException("Entretien non trouvé"));
 
             // Noter l'entretien
-            entretienService.noterEntretien(id, note, commentaire);
+            entretienService.noterEntretien(id, note);
 
             // Envoyer un email au candidat (collaborateur)
             String objet = "";
@@ -325,7 +324,6 @@ public class EntretienController {
                 contenu = "Bonjour,\n\nNous tenons à vous informer que votre entretien annuel a été évalué.\n\n" +
                         "Voici les détails de l'évaluation :\n\n" +
                         "- Note : " + note + "\n" +
-                        "- Commentaire : " + commentaire + "\n\n" +
                         "Nous vous remercions pour votre participation et votre engagement.\n\n" +
                         "Cordialement,\n[4You]";
                 emailCandidat = entretien.getCollaborateurs().getCollaborateur().getEmail(); // Récupérer l'e-mail du collaborateur pour un entretien annuel
@@ -336,18 +334,20 @@ public class EntretienController {
                 contenu = "Bonjour,\n\nNous vous informons que votre entretien technique pour le poste de \"" + titrePoste + "\" a été évalué.\n\n" +
                         "Voici les détails de l'évaluation :\n\n" +
                         "- Note : " + note + "\n" +
-                        "- Commentaire : " + commentaire + "\n\n" +
                         "Nous vous remercions pour votre intérêt pour notre entreprise.\n\n" +
                         "Cordialement,\n[4You]";                emailCandidat = entretien.getCandidature().getCollaborateur().getCollaborateur().getEmail(); // Récupérer l'e-mail du collaborateur pour un entretien technique
             }
 
             sendEmail(emailCandidat, objet, contenu);
 
-            return ResponseEntity.ok("Entretien noté avec succès");
+            responseBody.put("message", "Entretien noté avec succès");
+            return ResponseEntity.ok(responseBody);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            responseBody.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(responseBody);
         }
     }
+
 
     private void sendEmail(String to, String subject, String text) {
         MimeMessage message = emailSender.createMimeMessage();

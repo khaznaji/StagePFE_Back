@@ -500,6 +500,7 @@ public class UserController {
 
             }
 
+
             return ResponseEntity.ok(userDetails);
         } else {
             return ResponseEntity.notFound().build();

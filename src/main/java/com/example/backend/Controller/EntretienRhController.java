@@ -1,5 +1,6 @@
 package com.example.backend.Controller;
 
+import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
 import com.example.backend.Repository.CandidatureRepository;
 import com.example.backend.Repository.CollaborateurRepository;
@@ -35,6 +36,8 @@ public class EntretienRhController {
     @Autowired
 
     private UserRepository userRepository;
+    @Autowired
+    private MailConfig emailService ;
     @PostMapping("/create")
     public ResponseEntity<String> createEntretien(
             @RequestParam Long postId,
@@ -57,6 +60,23 @@ public class EntretienRhController {
                         Candidature candidature = optionalCandidature.get();
                         candidature.setEtat(EtatPostulation.Entretien_Rh);
                         candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
+                        String titrePoste = candidature.getPoste().getTitre();
+
+                        // Envoyer un e-mail au manager RH
+                        String subjectManager = "Nouvel entretien RH programmé : " + titrePoste ;
+                        String contentManager = "Cher Manager RH, un nouvel entretien RH a été programmé pour une candidature. Merci de vérifier.";
+
+                        emailService.sendEmail(user.getEmail(), subjectManager, contentManager);
+
+                        // Envoyer un e-mail au collaborateur
+                        String subjectCollaborateur =  "Nouvel entretien RH programmé : " + titrePoste ;
+                        String contentCollaborateur = "Cher Collaborateur, un entretien RH a été programmé pour vous. Merci de vérifier.";
+
+                        // Récupérer l'e-mail du collaborateur depuis la candidature (supposons qu'il existe un champ email dans Candidature)
+                        String collaborateurEmail = candidature.getCollaborateur().getCollaborateur().getEmail();
+
+                        emailService.sendEmail(collaborateurEmail, subjectCollaborateur, contentCollaborateur);
+
                         return ResponseEntity.ok("Entretien créé avec succès et état de la candidature mis à jour à 'Entretien'");
                     } else {
                         // Si la candidature n'est pas trouvée, renvoyer une réponse de mauvaise requête
@@ -118,6 +138,8 @@ public class EntretienRhController {
                 if (collaborateur != null) {
                     entretienAvecCollaborateur.put("nomCollaborateur", collaborateur.getCollaborateur().getNom());
                     entretienAvecCollaborateur.put("prenomCollaborateur", collaborateur.getCollaborateur().getPrenom());
+                    entretienAvecCollaborateur.put("candidatureId", collaborateur.getCollaborateur().getId());
+
                 }
             }
 

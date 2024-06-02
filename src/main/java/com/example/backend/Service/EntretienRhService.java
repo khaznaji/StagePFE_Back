@@ -1,5 +1,6 @@
 package com.example.backend.Service;
 
+import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
 import com.example.backend.Repository.CandidatureRepository;
 import com.example.backend.Repository.EntretienRhRepository;
@@ -48,8 +49,9 @@ public class EntretienRhService {
     public Optional<EntretienRh> getEntretienById(Long id) {
         return entretienRhRepository.findById(id);
     }
-
-    public void updateEntretien(Long id , Long candidatureId, String dateEntretien, String heureDebut, String heureFin, Long userId) {
+@Autowired
+private MailConfig emailService ;
+    public void updateEntretien(Long id, Long candidatureId, String dateEntretien, String heureDebut, String heureFin, Long userId) {
         // Vérifiez d'abord si l'entretien existe
         EntretienRh entretien = entretienRhRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entretien not found"));
@@ -66,6 +68,25 @@ public class EntretienRhService {
 
         // Enregistrez les modifications dans la base de données
         entretienRhRepository.save(entretien);
+
+        // Envoi d'e-mails pour informer les utilisateurs concernés
+        informerUtilisateurs(entretien);
+    }
+
+    private void informerUtilisateurs(EntretienRh entretien) {
+        // Envoyer un e-mail au manager RH
+        String subjectManager = "Modification de l'entretien RH";
+        String contentManager = "Cher Manager RH, l'entretien RH a été modifié avec succès.";
+
+        emailService.sendEmail(entretien.getUser().getEmail(), subjectManager, contentManager);
+
+        String titrePoste = entretien.getCandidature().getPoste().getTitre();
+
+        // Envoyer un e-mail au collaborateur associé à la candidature
+        String subjectCollaborateur = "Modification de l'entretien RH pour le poste : " + titrePoste;
+        String contentCollaborateur = "Cher Collaborateur, l'entretien RH prévu pour le poste '" + titrePoste + "' a été modifié. Veuillez vérifier les détails.";
+
+        emailService.sendEmail(entretien.getCandidature().getCollaborateur().getCollaborateur().getEmail(), subjectCollaborateur, contentCollaborateur);
     }
 
     public String generateRandomRoomId() {

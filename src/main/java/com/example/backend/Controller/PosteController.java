@@ -644,7 +644,7 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
                 return new ResponseEntity<>(poste, HttpStatus.OK);
             } else {
                 // Sinon, renvoyez un message d'erreur
-                return new ResponseEntity<>("Impossible de publier le poste car il y a un ou plusieurs test qui ne contiennent pas de questions.", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Impossible de publier le poste car il y a un ou plusieurs test qui ne contiennent pas de questions ou aucun test technique n'est soumis.", HttpStatus.BAD_REQUEST);
             }
         } else {
             return new ResponseEntity<>("Poste not found with ID: " + postId, HttpStatus.NOT_FOUND);

@@ -1,5 +1,6 @@
 package com.example.backend.Service;
 
+import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
 
 import com.example.backend.Repository.*;
@@ -11,6 +12,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import javax.mail.MessagingException;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -65,6 +67,9 @@ public class EntretienService {
 
         return entretienRepository.save(entretien);
     }
+    @Autowired
+    private MailConfig emailService;
+
     public void updateEntretien(Long id, Long candidatureId, String dateEntretien, String heureDebut, String heureFin) {
         // Vérifiez d'abord si l'entretien existe
         Entretien entretien = entretienRepository.findById(id)
@@ -81,8 +86,23 @@ public class EntretienService {
 
         // Enregistrez les modifications dans la base de données
         entretienRepository.save(entretien);
-    }
 
+        // Envoyer des emails
+        String collaborateurEmail = candidature.getCollaborateur().getCollaborateur().getEmail();
+        String managerEmail = candidature.getPoste().getManagerService().getManager().getEmail();
+        String managerName = candidature.getPoste().getManagerService().getManager().getNom();
+
+        String subject = "Modification de l'entretien";
+        String contentCollaborateur = String.format("Cher collaborateur,<br><br>L'entretien prévu le %s de %s à %s a été modifié. <br>Le manager de service est %s.<br><br>Cordialement.",
+                dateEntretien, heureDebut, heureFin, managerName);
+        String contentManager = String.format("Cher manager,<br><br>L'entretien pour le poste de %s a été modifié. <br>Le collaborateur a été informé.<br><br>Cordialement.",
+                candidature.getPoste().getTitre());
+
+
+            emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
+            emailService.sendEmail(managerEmail, subject, contentManager);
+
+    }
     public String generateRandomRoomId() {
         // Génère un identifiant UUID aléatoire
         return UUID.randomUUID().toString();
@@ -99,11 +119,10 @@ public class EntretienService {
     public List<Entretien> getEntretiensByManagerId(Long collaborateurId) {
         return entretienRepository.findByCandidature_Collaborateur_Id(collaborateurId);
     }
-    public void noterEntretien(Long id, int note, String commentaire) {
+    public void noterEntretien(Long id, int note) {
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + id));
         entretien.setNote(note);
-        entretien.setCommentaire(commentaire);
         entretien.setEtatEntretien(EtatEntretien.Termine);
         entretienRepository.save(entretien);
     }
@@ -124,36 +143,58 @@ public class EntretienService {
     }
     @Autowired
     private CollaborateurRepository collaborateurRepository ;
+
     public void ajoutEntretienAnnuel(Long collaborateurId, String dateEntretien, String heureDebut, String heureFin) {
-        // Récupérer l'utilisateur connecté (manager)
+        // Retrieve the current authenticated manager
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         Long managerServiceId = userDetails.getId();
         ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
                 .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
 
-        // Créer un nouvel entretien
+        // Create a new Entretien
         Entretien entretien = new Entretien();
 
-        // Set autres attributs de l'entretien
+        // Set other attributes of the Entretien
         entretien.setDateEntretien(dateEntretien);
         entretien.setHeureDebut(heureDebut);
         entretien.setHeureFin(heureFin);
         entretien.setEtatEntretien(EtatEntretien.En_Attente);
+        entretien.setTypeEntretien(TypeEntretien.Annuel);
 
-        entretien.setTypeEntretien(TypeEntretien.Annuel );
-
-        // Trouver le collaborateur par son ID et le lier à l'entretien
-        Collaborateur collaborateur = collaborateurRepository.findById(collaborateurId).orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + collaborateurId));
+        // Find the collaborateur by ID and link it to the Entretien
+        Collaborateur collaborateur = collaborateurRepository.findById(collaborateurId)
+                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + collaborateurId));
         entretien.setCollaborateurs(collaborateur);
         String roomId = generateRandomRoomId();
         entretien.setRoomId(roomId);
-        // Set le manager responsable de l'entretien
+
+        // Set the manager responsible for the Entretien
         entretien.setManagerService(managerService);
 
-        // Enregistrer l'entretien dans la base de données
+        // Save the Entretien in the database
         entretienRepository.save(entretien);
+
+        // Send email notifications
+        String collaborateurName = collaborateur.getCollaborateur().getNom();
+        String collaborateurEmail = collaborateur.getCollaborateur().getEmail();
+        String managerName = managerService.getManager().getNom();
+        String managerEmail = managerService.getManager().getEmail();
+
+        String subject = "Entretien Annuel";
+
+        String contentCollaborateur = String.format(
+                "Cher collaborateur %s,<br><br>Un nouvel entretien annuel est prévu le %s de %s à %s. <br>Le manager de service est %s.<br><br>Cordialement.",
+                collaborateurName, dateEntretien, heureDebut, heureFin, managerName);
+
+        String contentManager = String.format(
+                "Cher manager,<br><br>Un nouvel entretien annuel a été programmé pour le collaborateur %s.<br><br>Cordialement.",
+                collaborateurName);
+
+        emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
+        emailService.sendEmail(managerEmail, subject, contentManager);
     }
+
     public void updateEntretienAnnuel(Long entretienId, String dateEntretien, String heureDebut, String heureFin) {
         // Récupérer l'utilisateur connecté (manager)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -163,9 +204,8 @@ public class EntretienService {
                 .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
 
         // Vérifier si l'entretien existe
-        Entretien existingEntretien = entretienRepository.findById(entretienId).orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + entretienId));
-
-
+        Entretien existingEntretien = entretienRepository.findById(entretienId)
+                .orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + entretienId));
 
         // Mettre à jour les attributs de l'entretien
         existingEntretien.setDateEntretien(dateEntretien);
@@ -176,8 +216,26 @@ public class EntretienService {
         existingEntretien.setManagerService(managerService);
         String roomId = generateRandomRoomId();
         existingEntretien.setRoomId(roomId);
+
         // Enregistrer les modifications dans la base de données
         entretienRepository.save(existingEntretien);
+
+        // Envoyer des emails
+        String collaborateurEmail = existingEntretien.getCollaborateurs().getCollaborateur().getEmail();
+        String managerEmail = managerService.getManager().getEmail();
+        String managerName = managerService.getManager().getNom();
+        String collaborateurName = existingEntretien.getCollaborateurs().getCollaborateur().getNom();
+
+        String subject = "Modification de l'entretien annuel";
+        String contentCollaborateur = String.format(
+                "Cher collaborateur %s,<br><br>L'entretien annuel prévu le %s de %s à %s a été modifié. <br>Le manager est %s.<br><br>Cordialement.",
+                collaborateurName, dateEntretien, heureDebut, heureFin, managerName);
+        String contentManager = String.format(
+                "Cher manager,<br><br>L'entretien annuel pour le collaborateur %s a été modifié. <br>Le collaborateur a été informé.<br><br>Cordialement.",
+                collaborateurName);
+
+        emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
+        emailService.sendEmail(managerEmail, subject, contentManager);
     }
     public List<Map<String, Object>> getEntretiensAnnuelDuManagerConnecte() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
