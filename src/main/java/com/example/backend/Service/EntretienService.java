@@ -70,15 +70,14 @@ public class EntretienService {
     @Autowired
     private MailConfig emailService;
 
-    public void updateEntretien(Long id, Long candidatureId, String dateEntretien, String heureDebut, String heureFin) {
+    public void updateEntretien(Long id , String dateEntretien, String heureDebut, String heureFin) {
         // Vérifiez d'abord si l'entretien existe
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entretien not found"));
-        Candidature candidature = candidatureRepository.findById(candidatureId)
-                .orElseThrow(() -> new IllegalArgumentException("Candidature not found with id: " + candidatureId));
+       Candidature ancienneCandidature = entretien.getCandidature();
 
         // Mettez à jour les champs de l'entretien avec les nouvelles valeurs
-        entretien.setCandidature(candidature);
+        entretien.setCandidature(ancienneCandidature);
         entretien.setDateEntretien(dateEntretien);
         entretien.setHeureDebut(heureDebut);
         entretien.setHeureFin(heureFin);
@@ -88,15 +87,15 @@ public class EntretienService {
         entretienRepository.save(entretien);
 
         // Envoyer des emails
-        String collaborateurEmail = candidature.getCollaborateur().getCollaborateur().getEmail();
-        String managerEmail = candidature.getPoste().getManagerService().getManager().getEmail();
-        String managerName = candidature.getPoste().getManagerService().getManager().getNom();
+        String collaborateurEmail = ancienneCandidature.getCollaborateur().getCollaborateur().getEmail();
+        String managerEmail = ancienneCandidature.getPoste().getManagerService().getManager().getEmail();
+        String managerName = ancienneCandidature.getPoste().getManagerService().getManager().getNom();
 
         String subject = "Modification de l'entretien";
         String contentCollaborateur = String.format("Cher collaborateur,<br><br>L'entretien prévu le %s de %s à %s a été modifié. <br>Le manager de service est %s.<br><br>Cordialement.",
                 dateEntretien, heureDebut, heureFin, managerName);
         String contentManager = String.format("Cher manager,<br><br>L'entretien pour le poste de %s a été modifié. <br>Le collaborateur a été informé.<br><br>Cordialement.",
-                candidature.getPoste().getTitre());
+                ancienneCandidature.getPoste().getTitre());
 
 
             emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
@@ -110,8 +109,20 @@ public class EntretienService {
 
 
     public void deleteEntretien(Long id) {
+        // Vérifiez d'abord si l'entretien existe
+        Entretien entretien = entretienRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Entretien not found"));
+
+        // Mettez à jour le champ typeEntretien à "En attente"
+        entretien.setEtatEntretien(EtatEntretien.En_Attente);
+
+        // Sauvegardez les modifications de l'entretien avant de le supprimer
+        entretienRepository.save(entretien);
+
+        // Supprimez l'entretien
         entretienRepository.deleteById(id);
     }
+
 
     public List<Entretien> getEntretiensByCollaborateurId(Long collaborateurId) {
         return entretienRepository.findByCandidature_Collaborateur_Id(collaborateurId);
@@ -206,8 +217,9 @@ public class EntretienService {
         // Vérifier si l'entretien existe
         Entretien existingEntretien = entretienRepository.findById(entretienId)
                 .orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + entretienId));
+        Collaborateur ancienneCandidature = existingEntretien.getCollaborateurs();
+        existingEntretien.setCollaborateurs(ancienneCandidature);
 
-        // Mettre à jour les attributs de l'entretien
         existingEntretien.setDateEntretien(dateEntretien);
         existingEntretien.setHeureDebut(heureDebut);
         existingEntretien.setHeureFin(heureFin);

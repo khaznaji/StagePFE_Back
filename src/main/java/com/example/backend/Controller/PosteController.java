@@ -652,15 +652,36 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
     }
 
     @PutMapping("/archivePoste/{postId}")
-    public ResponseEntity<?> ArchivePoste(@PathVariable Long postId) {
+    public ResponseEntity<?> archivePoste(@PathVariable Long postId) {
         Optional<Poste> optionalPoste = posteRepository.findById(postId);
 
         if (optionalPoste.isPresent()) {
             Poste poste = optionalPoste.get();
-            poste.setPoste(EtatPoste.Archive); // Mettez à jour l'état du poste à Publie
+            poste.setPoste(EtatPoste.Archive); // Mettez à jour l'état du poste à Archive
             posteRepository.save(poste); // Sauvegardez l'entité mise à jour
 
-            // Votre code pour envoyer un e-mail ou effectuer d'autres actions après l'approbation du poste
+            // Récupérez toutes les candidatures liées à ce poste
+            List<Candidature> candidatures = candidatureRepository.findByPoste(poste);
+
+            for (Candidature candidature : candidatures) {
+                // Si l'état de la candidature n'est pas déjà accepté, mettez à jour son état à refusé
+                if (candidature.getEtat() != EtatPostulation.ACCEPTEE) {
+                    candidature.setEtat(EtatPostulation.REFUSEE);
+                    candidatureRepository.save(candidature);
+
+                    // Envoyez un e-mail de notification au candidat
+                    String subject = "Refus de votre candidature";
+                    String message = "Bonjour,\n\n"
+                            + "Nous vous remercions pour l'intérêt que vous avez manifesté envers notre entreprise.\n\n"
+                            + "Nous regrettons de vous informer que votre candidature pour le poste de "
+                            + poste.getTitre()
+                            + " n'a pas été retenue.\n\n"
+                            + "Nous vous souhaitons beaucoup de succès dans vos recherches futures.\n\n"
+                            + "Cordialement,\n"
+                            + "L'équipe de 4You";
+                    emailService.sendEmail(candidature.getCollaborateur().getCollaborateur().getEmail(), subject, message);
+                }
+            }
 
             return new ResponseEntity<>(poste, HttpStatus.OK);
         } else {

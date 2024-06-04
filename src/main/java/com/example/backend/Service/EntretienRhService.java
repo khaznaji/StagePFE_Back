@@ -51,20 +51,26 @@ public class EntretienRhService {
     }
 @Autowired
 private MailConfig emailService ;
-    public void updateEntretien(Long id, Long candidatureId, String dateEntretien, String heureDebut, String heureFin, Long userId) {
+    public void updateEntretien(Long id, String dateEntretien, String heureDebut, String heureFin, Long userId) {
         // Vérifiez d'abord si l'entretien existe
         EntretienRh entretien = entretienRhRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entretien not found"));
-        Candidature candidature = candidatureRepository.findById(candidatureId)
-                .orElseThrow(() -> new IllegalArgumentException("Candidature not found with id: " + candidatureId));
-        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("Utilisateur non trouvé avec l'ID : " + userId));
 
-        // Mettez à jour les champs de l'entretien avec les nouvelles valeurs
-        entretien.setCandidature(candidature);
+        // Vérifier si d'autres champs nécessitent une mise à jour
         entretien.setDateEntretien(dateEntretien);
         entretien.setHeureDebut(heureDebut);
         entretien.setHeureFin(heureFin);
+
+        // Récupérer l'ancienne candidature associée à l'entretien
+        Candidature ancienneCandidature = entretien.getCandidature();
+
+        // Mettez à jour l'utilisateur si nécessaire
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Utilisateur non trouvé avec l'ID : " + userId));
         entretien.setUser(user);
+
+        // Réaffecter l'ancienne candidature à l'entretien
+        entretien.setCandidature(ancienneCandidature);
 
         // Enregistrez les modifications dans la base de données
         entretienRhRepository.save(entretien);
@@ -72,6 +78,8 @@ private MailConfig emailService ;
         // Envoi d'e-mails pour informer les utilisateurs concernés
         informerUtilisateurs(entretien);
     }
+
+
 
     private void informerUtilisateurs(EntretienRh entretien) {
         // Envoyer un e-mail au manager RH

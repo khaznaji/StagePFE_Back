@@ -138,7 +138,7 @@ public class UserController {
             @RequestParam("poste") String poste,
             @RequestParam("managerServiceId") Long managerServiceId,
             @RequestParam(value = "bio", required = false) String bio,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree,
+            @RequestParam("dateEntree") String dateEntree,
             @RequestParam("competences") List<Competence> competences
     ) {
         try {

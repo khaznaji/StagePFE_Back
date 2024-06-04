@@ -122,57 +122,6 @@ public class AuthController {
         }
     }
 
-    /* public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-        try {
-            // Authentification
-            Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-            String jwt = jwtUtils.generateJwtToken(authentication);
-
-            // Obtention des détails de l'utilisateur
-            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
-                    .collect(Collectors.toList());
-
-            // Vérification si l'utilisateur existe
-            User user = userRepository.findUserByEmail(loginRequest.getEmail());
-            if (user == null) {
-                return ResponseEntity
-                        .badRequest()
-                        .body(new MessageResponse("Error: Email not found!"));
-            }
-
-            // Vérification de l'état d'activation
-            if (!user.isActivated()) {
-                return ResponseEntity
-                        .badRequest()
-                        .body(new MessageResponse("Error: User Inactive!"));
-            }
-
-            // Autres vérifications de l'utilisateur si nécessaires
-            // ...
-
-            // Retourner la réponse avec le token JWT
-            return ResponseEntity.ok(new JwtResponse(jwt,
-                    userDetails.getId(),
-                    userDetails.getUsername(),
-                    roles));
-
-        } catch (BadCredentialsException e) {
-            // Si les informations d'identification ne sont pas valides
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Invalid credentials!"));
-        } catch (UsernameNotFoundException e) {
-            // Si l'email n'existe pas dans la base de données
-            return ResponseEntity
-                    .badRequest()
-                    .body(new MessageResponse("Error: Email not found!"));
-        }
-    } */
 
 
     @PutMapping("/{userId}/activate")

@@ -300,7 +300,7 @@ public class CollaborateurController {
             @RequestParam("poste") String poste,
             @RequestParam("managerServiceId") Long managerServiceId,
             @RequestParam(value = "bio", required = false) String bio,
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateEntree
+            @RequestParam(value = "dateEntree", required = false) String dateEntree
     ) {
         try {
             User manager = new User();

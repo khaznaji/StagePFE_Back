@@ -179,13 +179,12 @@ public class EntretienController {
     @PutMapping("/{id}/update")
     public ResponseEntity<Map<String, Object>> updateEntretien(
             @PathVariable Long id,
-            @RequestParam Long candidatureId,
             @RequestParam String dateEntretien,
             @RequestParam String heureDebut,
             @RequestParam String heureFin) {
         Map<String, Object> response = new HashMap<>();
         try {
-            entretienService.updateEntretien(id, candidatureId, dateEntretien, heureDebut, heureFin);
+            entretienService.updateEntretien(id, dateEntretien, heureDebut, heureFin);
 
             response.put("message", "Entretien updated successfully");
             response.put("status", "success");
@@ -199,7 +198,8 @@ public class EntretienController {
 
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEntretien(@PathVariable Long id) {
+    public ResponseEntity
+            <Map<String, String>> deleteEntretienTechnique(@PathVariable Long id) {
         Optional<Entretien> optionalEntretien = entretienService.getEntretienById(id);
         if (optionalEntretien.isPresent()) {
             Entretien entretien = optionalEntretien.get();
@@ -207,11 +207,14 @@ public class EntretienController {
             candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN);
             candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
             entretienService.deleteEntretien(id);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Entretien technique modifie avec succès.");
 
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
         } else {
-            // Si l'entretien n'est pas trouvé, retourner une réponse de mauvaise requête
-            return ResponseEntity.notFound().build();
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Entretien technique modifie avec succès.");
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
@@ -397,26 +400,35 @@ public class EntretienController {
 
         // Construction de la réponse
         Map<String, String> response = new HashMap<>();
-        response.put("message", "Entretien technique ajouté avec succès.");
+        response.put("message", "Entretien Annuel ajouté avec succès.");
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
 
     @PutMapping("/updateAnnuel/{entretienId}")
-    public ResponseEntity<Map<String, String>> updateEntretienAnnuel(@PathVariable Long entretienId,
+    public ResponseEntity<Map<String, Object>> updateEntretienAnnuel(@PathVariable Long entretienId,
                                                            @RequestParam String dateEntretien,
                                                            @RequestParam String heureDebut,
                                                            @RequestParam String heureFin) {
-        entretienService.updateEntretienAnnuel(entretienId, dateEntretien, heureDebut, heureFin);
+        Map<String, Object> response = new HashMap<>();
+        try {
+            entretienService.updateEntretienAnnuel(entretienId, dateEntretien, heureDebut, heureFin);
+
+            response.put("message", "Entretien updated successfully");
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            response.put("message", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }   }
+    @DeleteMapping("/deleteAnnuel/{entretienId}")
+    public ResponseEntity<Map<String, String>> deleteEntretienAnnuel(@PathVariable Long entretienId) {
+        entretienService.deleteEntretien(entretienId);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Entretien technique modifie avec succès.");
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);    }
-    @DeleteMapping("/deleteAnnuel/{entretienId}")
-    public ResponseEntity<String> deleteEntretienTechnique(@PathVariable Long entretienId) {
-        entretienService.deleteEntretien(entretienId);
-        return ResponseEntity.ok("Entretien technique supprimé avec succès.");
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
     }
 
 

@@ -1,5 +1,6 @@
 package com.example.backend.Service;
 
+import com.example.backend.Configuration.MailConfig;
 import com.example.backend.Entity.*;
 import com.example.backend.Repository.CandidatureRepository;
 import com.example.backend.Repository.CollaborateurRepository;
@@ -63,6 +64,8 @@ public void updateCandidaturesToEnAttente(List<Long> candidatureIds) {
     PosteRepository posteRepository;
     @Autowired
     ManagerServiceRepository managerServiceRepository;
+    @Autowired
+    MailConfig emailService ;
     @Transactional
     public void accepterCandidatures(List<Long> candidatureIds) {
         for (Long candidatureId : candidatureIds) {
@@ -83,9 +86,12 @@ public void updateCandidaturesToEnAttente(List<Long> candidatureIds) {
                     collaborateur.setManagerService(poste.getManagerService());
 
                     collaborateurRepository.save(collaborateur);
+                    emailService.sendAcceptanceEmail(collaborateur.getCollaborateur().getEmail() , poste.getTitre());
+
                 }
             }
             candidatureRepository.save(candidature);
+
         }
     }
 

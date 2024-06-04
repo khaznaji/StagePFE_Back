@@ -39,8 +39,7 @@ public class Collaborateur {
     private Departement department;
     private String poste ;
     private String bio ;
-    @DateTimeFormat(pattern = "dd/MM/yyyy")
-    private LocalDate dateEntree;
+    private String dateEntree;
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "collab_competence",

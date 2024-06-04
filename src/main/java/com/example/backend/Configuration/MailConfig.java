@@ -157,5 +157,18 @@ public class MailConfig {
 
         sendEmail(candidature.getCollaborateur().getCollaborateur().getEmail(), subject, body);
     } */
+    public void sendAcceptanceEmail(String recipientEmail, String posteTitre) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(recipientEmail);
+        message.setSubject("Votre candidature a été acceptée !");
+        message.setText("Cher Collaborateur,\n\n"
+                + "Nous sommes heureux de vous informer que votre candidature pour le poste de "
+                + posteTitre
+                + " a été acceptée.\n\n"
+                + "Félicitations et bienvenue dans notre équipe !\n\n"
+                + "Cordialement,\n"
+                + "L'équipe de [Votre entreprise]");
+        javaMailSender.send(message);
+    }
 }
 

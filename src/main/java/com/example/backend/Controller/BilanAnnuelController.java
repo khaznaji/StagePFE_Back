@@ -34,7 +34,7 @@ public class BilanAnnuelController {
     @Autowired
     private BilanAnnuelService bilanAnnuelService;
     @PostMapping("/envoyer")
-    public ResponseEntity<String> envoyerBilanAnnuel(
+    public ResponseEntity<Map<String, Object>>envoyerBilanAnnuel(
 
     ) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -42,13 +42,18 @@ public class BilanAnnuelController {
         Long managerServiceId = userDetails.getId();
         ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
                 .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
+        Map<String, Object> response = new HashMap<>();
 
         if (managerService == null) {
-            return new ResponseEntity<>("ManagerService non trouvé", HttpStatus.NOT_FOUND);
+            response.put("success", false);
+            response.put("message", "ManagerService non trouvé");
+            return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
         }
 
         bilanAnnuelService.envoyerBilanAnnuel(managerService);
-        return new ResponseEntity<>("Bilan annuel envoyé avec succès", HttpStatus.OK);
+        response.put("success", true);
+        response.put("message", "Bilan annuel envoyé avec succès");
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
     @PutMapping("/mettreAJour/{bilanAnnuelId}")
     public ResponseEntity<BilanAnnuel> mettreAJourBilanAnnuel(

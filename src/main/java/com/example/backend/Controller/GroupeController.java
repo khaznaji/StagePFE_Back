@@ -217,7 +217,62 @@ public class GroupeController {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @GetMapping("/groupesParFormationNonCertifie/{formationId}")
+    public ResponseEntity<List<Map<String, Object>>> getGroupesByFormationNonCertifie(@PathVariable Long formationId) {
+        try {
+            Optional<Formation> formationData = formationRepository.findById(formationId);
+            if (formationData.isPresent()) {
+                Formation formation = formationData.get();
+                List<Groups> groupes = groupsRepository.findByFormation(formation);
+                List<Map<String, Object>> groupesAvecFormateurs = new ArrayList<>();
 
+                // Filtrer les groupes non certifiés
+                List<Groups> groupesNonCertifies = new ArrayList<>();
+                for (Groups groupe : groupes) {
+                    if (!"Certifie".equals(groupe.getEtat())) {
+                        groupesNonCertifies.add(groupe);
+                    }
+                }
+
+                // Pour chaque groupe non certifié, vérifier s'il y a un formateur associé et récupérer son image
+                for (Groups groupe : groupesNonCertifies) {
+                    Formateur formateur = groupe.getFormateur(); // Supposons que la relation entre Group et User soit représentée par la méthode getFormateur()
+                    Map<String, Object> groupeAvecFormateur = new HashMap<>();
+                    groupeAvecFormateur.put("groupe", groupe);
+
+                    if (formateur != null) {
+                        // Récupérer l'URL de l'image du formateur
+                        String formateurImageUrl = formateur.getFormateur().getImage();
+                        String formateurnom = formateur.getFormateur().getNom();
+                        String formateurprenom = formateur.getFormateur().getPrenom();
+                        // Ajouter l'URL de l'image du formateur au groupe
+                        groupeAvecFormateur.put("formateurImageUrl", formateurImageUrl);
+                        groupeAvecFormateur.put("formateurnom", formateurnom);
+                        groupeAvecFormateur.put("formateurprenom", formateurprenom);
+                        int nombreMembres = groupe.getCollaborateurs().size(); // Supposons que la relation entre Group et Collaborateur soit représentée par la méthode getCollaborateurs()
+                        groupeAvecFormateur.put("nombreMembres", nombreMembres);
+
+                        // Récupérer les images des trois premiers collaborateurs du groupe
+                        List<String> collaborateurImages = new ArrayList<>();
+                        List<Collaborateur> collaborateurs = groupe.getCollaborateurs(); // Supposons que la relation entre Group et Collaborateur soit représentée par la méthode getCollaborateurs()
+                        for (int i = 0; i < Math.min(3, collaborateurs.size()); i++) {
+                            String collaborateurImage = collaborateurs.get(i).getCollaborateur().getImage(); // Supposons que getImage() récupère l'URL de l'image du collaborateur
+                            collaborateurImages.add(collaborateurImage);
+                        }
+                        groupeAvecFormateur.put("collaborateurImages", collaborateurImages);
+                    }
+
+                    groupesAvecFormateurs.add(groupeAvecFormateur);
+                }
+
+                return new ResponseEntity<>(groupesAvecFormateurs, HttpStatus.OK);
+            } else {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 
 

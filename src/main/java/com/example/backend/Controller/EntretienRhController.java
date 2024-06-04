@@ -149,19 +149,26 @@ public class EntretienRhController {
         return new ResponseEntity<>(entretiensAvecCollaborateurs, HttpStatus.OK);
     }
     @PutMapping("/{id}/update")
-    public ResponseEntity<String> updateEntretien(
+    public ResponseEntity
+            <Map<String, Object>> updateEntretien(
             @PathVariable Long id,
-            @RequestParam Long candidatureId,
             @RequestParam Long userId,
             @RequestParam String dateEntretien,
             @RequestParam String heureDebut,
             @RequestParam String heureFin) {
         try {
-            entretienRhService.updateEntretien(id, candidatureId, dateEntretien, heureDebut, heureFin , userId);
-            return ResponseEntity.ok("Entretien updated successfully");
+            entretienRhService.updateEntretien(id, dateEntretien, heureDebut, heureFin, userId);
+            // Si la mise à jour réussit, renvoyer une réponse OK avec un message
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Entretien updated successfully");
+            return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            // Si une exception est levée, renvoyer une réponse BadRequest avec le message d'erreur
+            Map<String, Object> response = new HashMap<>();
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
+
     }
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEntretien(@PathVariable Long id) {
@@ -169,7 +176,7 @@ public class EntretienRhController {
         if (optionalEntretien.isPresent()) {
             EntretienRh entretien = optionalEntretien.get();
             Candidature candidature = entretien.getCandidature();
-            candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN);
+            candidature.setEtat(EtatPostulation.EN_ATTENTE_ENTRETIEN_RH);
             candidatureRepository.save(candidature); // Sauvegarder la candidature mise à jour
             entretienRhService.deleteEntretien(id);
 
