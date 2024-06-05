@@ -1,12 +1,10 @@
 package com.example.backend.Controller;
 
-import com.example.backend.Entity.Collaborateur;
 import com.example.backend.Entity.Poste;
 import com.example.backend.Entity.Quiz;
 import com.example.backend.Repository.PosteRepository;
 import com.example.backend.Repository.QuizRepository;
 import com.example.backend.Service.QuizService;
-import javafx.geometry.Pos;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

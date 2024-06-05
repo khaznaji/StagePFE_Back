@@ -1,0 +1,70 @@
+pipeline {
+  agent any;
+stages {
+    stage("GIT") {
+      steps {
+        sh 'git checkout master'
+        sh 'git pull origin master'
+      }
+    }
+
+    stage("MAVEN BUILD") {
+      steps {
+       dir('gestion-station-ski') {
+        sh 'mvn clean install -Dmaven.test.skip=true'
+      }
+    }
+    }
+/*    stage("MOCKITO") {
+          steps {
+          dir('gestion-station-ski') {
+            sh "mvn test -Dtest=tn.esprit.spring.services.SubscriptionServicesImplMock"
+          }}
+        }
+    stage("SONARQUBE") {
+      steps {
+      dir('gestion-station-ski') {
+       sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
+      }}
+    }*/
+/*stage('MVN NEXUS')
+                  {
+                  steps {
+                        dir('gestion-station-ski') {
+
+                  sh 'mvn  deploy -DskipTests  '
+                  }
+                  }}*/
+
+
+ /*stage("BUILD DOCKER IMAGE") {
+             steps {
+                   dir('gestion-station-ski') {
+
+               sh 'docker build -t khaznaji/oumaymalynakhaznaji-5sae4-g1-gestion-station-ski:latest .'
+              git branch: 'main', url: 'https://github.com/khaznaji/Angular-DEVOPS.git'
+               sh 'docker build -t khaznaji/test:latest -f Dockerfile .'
+             }}
+           }
+       stage('docker push'){
+                        steps{
+                              dir('gestion-station-ski') {
+                            script{
+                                sh 'docker login -u "khaznaji" -p "191JFT2725" docker.io'
+                                sh 'docker push khaznaji/oumaymalynakhaznaji-5sae4-g1-gestion-station-ski:latest'
+                                sh 'docker push khaznaji/test:latest'
+
+                            }
+                        }
+                    }}
+
+               stage('docker compose') {
+                   steps{
+                         dir('gestion-station-ski') {
+                       sh 'docker compose down --rmi all'
+                       sh 'docker compose up -d'
+                   }}
+               }*/
+
+
+}}
