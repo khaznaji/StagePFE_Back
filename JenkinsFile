@@ -16,23 +16,23 @@ stages {
     }
    stage("MOCKITO") {
           steps {
-            sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.CandidatureServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.CertificatsServiceImpMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.CollaborateurServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.CompetenceServiceImpMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.EntretienRhServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.EntretienServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.EvaluationServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.FormateurServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.FormationServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.GroupServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.ManagerServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.PosteServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.QuestionServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.QuizzServiceImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.SessionFormationImplMock" ,
-            sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
+        sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
+                    sh "mvn test -Dtest=com.example.backend.services.CandidatureServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.CertificatsServiceImpMock"
+                    sh "mvn test -Dtest=com.example.backend.services.CollaborateurServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.CompetenceServiceImpMock"
+                    sh "mvn test -Dtest=com.example.backend.services.EntretienRhServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.EntretienServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.EvaluationServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.FormateurServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.FormationServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.GroupServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.ManagerServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.PosteServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.QuestionServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.QuizzServiceImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.SessionFormationImplMock"
+                    sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
 
           }
         }/*
