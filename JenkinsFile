@@ -10,9 +10,9 @@ stages {
 
     stage("MAVEN BUILD") {
       steps {
-       dir('StagePFE_Back') {
         sh 'mvn clean install -Dmaven.test.skip=true'
-      }
+
+
     }
     }
 /*    stage("MOCKITO") {
