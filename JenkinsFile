@@ -34,7 +34,6 @@ stages {
             sh "mvn test -Dtest=com.example.backend.services.SessionFormationImplMock" ,
             sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
 
-
           }
         }/*
     stage("SONARQUBE") {
