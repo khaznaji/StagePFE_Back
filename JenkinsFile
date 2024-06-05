@@ -14,12 +14,11 @@ stages {
 
     }
     }
-/*    stage("MOCKITO") {
+   stage("MOCKITO") {
           steps {
-          dir('gestion-station-ski') {
-            sh "mvn test -Dtest=tn.esprit.spring.services.SubscriptionServicesImplMock"
-          }}
-        }
+            sh "mvn test -Dtest=com.example.backend.services.*"
+          }
+        }/*
     stage("SONARQUBE") {
       steps {
       dir('gestion-station-ski') {
