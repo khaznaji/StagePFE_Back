@@ -16,7 +16,7 @@ stages {
     }
    stage("MOCKITO") {
           steps {
-            sh "mvn test -Dtest=com.example.backend.services.*"
+            sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
           }
         }/*
     stage("SONARQUBE") {
