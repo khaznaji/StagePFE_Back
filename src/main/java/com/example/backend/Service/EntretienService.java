@@ -21,6 +21,13 @@ import java.util.stream.Collectors;
 
 @Service
 public class EntretienService {
+    public EntretienService(ManagerServiceRepository managerServiceRepository,
+                            EntretienRepository entretienRepository,
+                            MailConfig emailService) {
+        this.managerServiceRepository = managerServiceRepository;
+        this.entretienRepository = entretienRepository;
+        this.emailService = emailService;
+    }
     @Autowired
     private EntretienRepository entretienRepository;
 
@@ -70,7 +77,7 @@ public class EntretienService {
     @Autowired
     private MailConfig emailService;
 
-    public void updateEntretien(Long id , String dateEntretien, String heureDebut, String heureFin) {
+   public void updateEntretien(Long id , String dateEntretien, String heureDebut, String heureFin) {
         // Vérifiez d'abord si l'entretien existe
         Entretien entretien = entretienRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Entretien not found"));
@@ -96,12 +103,11 @@ public class EntretienService {
                 dateEntretien, heureDebut, heureFin, managerName);
         String contentManager = String.format("Cher manager,<br><br>L'entretien pour le poste de %s a été modifié. <br>Le collaborateur a été informé.<br><br>Cordialement.",
                 ancienneCandidature.getPoste().getTitre());
-
-
             emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
             emailService.sendEmail(managerEmail, subject, contentManager);
 
     }
+
     public String generateRandomRoomId() {
         // Génère un identifiant UUID aléatoire
         return UUID.randomUUID().toString();
@@ -205,8 +211,59 @@ public class EntretienService {
         emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
         emailService.sendEmail(managerEmail, subject, contentManager);
     }
-
     public void updateEntretienAnnuel(Long entretienId, String dateEntretien, String heureDebut, String heureFin) {
+        // Récupérer l'utilisateur connecté (manager)
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Long managerServiceId = userDetails.getId();
+        ManagerService managerService = managerServiceRepository.findByManagerManagerId(managerServiceId)
+                .orElseThrow(() -> new EntityNotFoundException("ManagerService non trouvé avec l'ID : " + managerServiceId));
+
+        // Vérifier si l'entretien existe
+        Entretien existingEntretien = entretienRepository.findById(entretienId)
+                .orElseThrow(() -> new EntityNotFoundException("Entretien non trouvé avec l'ID : " + entretienId));
+        Collaborateur ancienneCandidature = existingEntretien.getCollaborateurs();
+        existingEntretien.setCollaborateurs(ancienneCandidature);
+
+        existingEntretien.setDateEntretien(dateEntretien);
+        existingEntretien.setHeureDebut(heureDebut);
+        existingEntretien.setHeureFin(heureFin);
+        existingEntretien.setTypeEntretien(TypeEntretien.Annuel);
+        existingEntretien.setEtatEntretien(EtatEntretien.En_Attente);
+        existingEntretien.setManagerService(managerService);
+        String roomId = generateRandomRoomId();
+        existingEntretien.setRoomId(roomId);
+
+        // Enregistrer les modifications dans la base de données
+        entretienRepository.save(existingEntretien);
+
+        // Envoyer des emails
+        String collaborateurEmail = existingEntretien.getCollaborateurs().getCollaborateur().getEmail();
+        String managerEmail = managerService.getManager().getEmail();
+        String managerName = managerService.getManager().getNom();
+        String collaborateurName = existingEntretien.getCollaborateurs().getCollaborateur().getNom();
+
+        String subject = "Modification de l'entretien annuel";
+        String contentCollaborateur = String.format(
+                "Cher collaborateur %s,<br><br>L'entretien annuel prévu le %s de %s à %s a été modifié. <br>Le manager est %s.<br><br>Cordialement.",
+                collaborateurName, dateEntretien, heureDebut, heureFin, managerName);
+
+        // Vérifier si les adresses e-mail du manager et du collaborateur sont les mêmes
+        if (!collaborateurEmail.equals(managerEmail)) {
+            // Si les adresses e-mail sont différentes, envoyer deux emails distincts
+            String contentManager = String.format(
+                    "Cher manager,<br><br>L'entretien annuel pour le collaborateur %s a été modifié. <br>Le collaborateur a été informé.<br><br>Cordialement.",
+                    collaborateurName);
+
+            emailService.sendEmail(managerEmail, subject, contentManager);
+        }
+
+        // Envoyer l'email au collaborateur
+        emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
+    }
+
+
+   /* public void updateEntretienAnnuel(Long entretienId, String dateEntretien, String heureDebut, String heureFin) {
         // Récupérer l'utilisateur connecté (manager)
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
@@ -249,7 +306,7 @@ public class EntretienService {
         emailService.sendEmail(collaborateurEmail, subject, contentCollaborateur);
         emailService.sendEmail(managerEmail, subject, contentManager);
     }
-    public List<Map<String, Object>> getEntretiensAnnuelDuManagerConnecte() {
+    */public List<Map<String, Object>> getEntretiensAnnuelDuManagerConnecte() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         ManagerService managerService = userDetails.getUser().getManagerService();
@@ -278,8 +335,7 @@ public class EntretienService {
         }
 
         return entretiensAvecCollaborateurs;
-    }
-    public List<Map<String, Object>> getEntretiensAnnuelDuCollaborateurConnecte() {
+    }/*public List<Map<String, Object>> getEntretiensAnnuelDuCollaborateurConnecte() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         Collaborateur collaborateur = userDetails.getUser().getCollaborateur();
@@ -312,7 +368,53 @@ public class EntretienService {
         }
 
         return entretiensAvecCollaborateurs;
+    }*/
+    public List<Map<String, Object>> getEntretiensAnnuelDuCollaborateurConnecte() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetailsImpl)) {
+            // Si l'authentification est nulle ou le principal n'est pas une instance de UserDetailsImpl, retourner une liste vide
+            return Collections.emptyList();
+        }
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+        Collaborateur collaborateur = userDetails.getUser().getCollaborateur();
+
+        if (collaborateur == null) {
+            // Si le collaborateur est nul, retourner une liste vide
+            return Collections.emptyList();
+        }
+
+        Long collaborateurId = collaborateur.getId();
+
+        List<Entretien> entretiensDuCollaborateur = entretienRepository.findByCollaborateurs_Id(collaborateurId);
+
+        List<Map<String, Object>> entretiensAvecCollaborateurs = new ArrayList<>();
+
+        for (Entretien entretien : entretiensDuCollaborateur) {
+            if (entretien.getTypeEntretien() == TypeEntretien.Annuel) {
+                Map<String, Object> entretienAvecCollaborateur = new HashMap<>();
+                entretienAvecCollaborateur.put("entretien", entretien);
+
+                // Ajoutez les informations du collaborateur
+
+                // Récupérez le manager associé à l'entretien
+                ManagerService managerService = entretien.getManagerService();
+                if (managerService != null) {
+                    User manager = managerService.getManager();
+                    if (manager != null) {
+                        entretienAvecCollaborateur.put("nomManager", manager.getNom());
+                        entretienAvecCollaborateur.put("prenomManager", manager.getPrenom());
+                    }
+                }
+
+                entretiensAvecCollaborateurs.add(entretienAvecCollaborateur);
+            }
+        }
+
+        return entretiensAvecCollaborateurs;
     }
+
     public TypeEntretien getTypeEntretien(Long id) {
         Optional<Entretien> optionalEntretien = getEntretienById(id);
         Entretien entretien = optionalEntretien.orElseThrow(() -> new IllegalArgumentException("Entretien non trouvé"));

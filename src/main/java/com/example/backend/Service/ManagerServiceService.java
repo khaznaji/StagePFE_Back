@@ -62,10 +62,8 @@ public class ManagerServiceService implements IManagerServiceService{
 
         List<Collaborateur> candidatures = managerService.getCollaborateurs();
 
-        // Liste de listes de cartes pour stocker les détails de postulation de chaque collaborateur
         List<List<Map<String, Object>>> result = new ArrayList<>();
 
-        // Parcourir chaque candidature et extraire les détails requis
         for (Collaborateur candidature : candidatures) {
             List<Map<String, Object>> collaborateurDetails = new ArrayList<>();
 

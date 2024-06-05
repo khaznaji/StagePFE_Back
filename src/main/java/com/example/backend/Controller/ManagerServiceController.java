@@ -17,7 +17,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +28,10 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Controller
 @RestController
@@ -164,7 +168,53 @@ public class ManagerServiceController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    @GetMapping("/manager/info")
+    public Map<String, Object> getManagerServiceInfo(@AuthenticationPrincipal UserDetails userDetails) {
+        // Récupérez le Collaborateur connecté
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Map<String, Object> userInf = new HashMap<>();
 
+        ManagerService managerService = user.getManagerService();
+        Map<String, Object> userInfo = new HashMap<>();
+        userInfo.put("nom", managerService.getManager().getNom());
+        userInfo.put("prenom", managerService.getManager().getPrenom());
+        userInfo.put("dateEntree", managerService.getDateEntree());
+        userInfo.put("departement", managerService.getDepartment().name());
+        userInfo.put("image", managerService.getManager().getImage());
+        userInfo.put("poste", managerService.getPoste());
+
+        userInfo.put("equipe", managerService.getCollaborateurs().stream()
+                .map(collaborateur -> {
+                    Map<String, Object> collaborateurMap = new HashMap<>();
+                    collaborateurMap.put("nom", collaborateur.getCollaborateur().getNom() + " " + collaborateur.getCollaborateur().getPrenom());
+                    collaborateurMap.put("id", collaborateur.getId());
+                    collaborateurMap.put("image", collaborateur.getCollaborateur().getImage());
+
+                    return collaborateurMap;
+                })
+                .collect(Collectors.toList()));
+
+        userInfo.put("postesCrees", managerService.getPostes().stream()
+                .filter(poste -> EtatPoste.Publie.equals(poste.getPoste())) // Filtre les postes avec l'état "publié"
+                .map(poste -> {
+                    Map<String, Object> posteMap = new HashMap<>();
+                    posteMap.put("titre", poste.getTitre());
+                    posteMap.put("description", poste.getDescription());
+                    posteMap.put("typeContrat", poste.getTypeContrat());
+                    posteMap.put("nombreCandidats", poste.getCandidatures().size());
+
+                    posteMap.put("id", poste.getId());
+                    return posteMap;
+                })
+                .collect(Collectors.toList()));
+
+        userInfo.put("nombrePostesCrees", managerService.getPostes().stream()
+                .filter(poste -> poste.getPoste() == EtatPoste.Publie) // Filtrer les postes avec un état "publié"
+                .count());
+
+        return userInfo;
+    }
 
 
 }

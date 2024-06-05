@@ -58,6 +58,9 @@ public  class User {
     private Formateur formateur;
     private String image ;
 
+
+
+
     public Departement getDepartment() {
         // Ajoutez ici la logique pour récupérer le département de l'utilisateur.
         // Vous devrez peut-être ajuster cela en fonction de votre modèle de données.

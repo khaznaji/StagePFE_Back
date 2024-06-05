@@ -29,26 +29,28 @@ public class GroupeService {
         this.formateurRepository = formateurRepository;
         this.formationRepository = formationRepository;
     }
-    public void addGroupWithFormationAndCollaborateurs(Long formationId, String nom, List<Long> collaborateursIds) {
-        // Récupérer la formation depuis la base de données
-        Formation formation = formationRepository.findById(formationId)
-                .orElseThrow(() -> new RuntimeException("Formation non trouvée"));
-
-        // Récupérer le formateur associé à la formation
-        Formateur formateur = formation.getFormateur();
-
-        // Créer une nouvelle instance de Groupes
-        Groups groupe = new Groups();
-        groupe.setFormation(formation);
-        groupe.setFormateur(formateur);
-        groupe.setNom(nom);
-
-        // Récupérer la liste des collaborateurs depuis la base de données
-        List<Collaborateur> collaborateurs = collaborateurRepository.findAllById(collaborateursIds);
-        groupe.setCollaborateurs(collaborateurs);
-
-        // Enregistrer le groupe dans la base de données
-        groupsRepository.save(groupe);
+    public Groups createGroupe(Groups groupe) {
+        return groupsRepository.save(groupe);
     }
+
+    // Read
+    public List<Groups> getAllGroupes() {
+        return groupsRepository.findAll();
+    }
+
+    public Optional<Groups> getGroupeById(Long id) {
+        return groupsRepository.findById(id);
+    }
+
+    // Update
+    public Groups updateGroupe(Groups groupe) {
+        return groupsRepository.save(groupe);
+    }
+
+    // Delete
+    public void deleteGroupe(Long id) {
+        groupsRepository.deleteById(id);
+    }
+
 
   }

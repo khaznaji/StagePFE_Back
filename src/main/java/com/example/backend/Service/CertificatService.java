@@ -31,6 +31,7 @@ public class CertificatService {
             if (!users.isEmpty()) {
                 return certificatRepository.findByCollaborateur(users.get(0)); // Assuming you want the first user's certificate
             }
+
         }
         return null;
     }

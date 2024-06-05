@@ -39,6 +39,7 @@ public class UserService implements IUserService{
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
+
     public User findById(Long id) {
         return userRepository.findById(id).orElse(null);
     }
@@ -146,45 +147,6 @@ public class UserService implements IUserService{
         // Envoyer un e-mail au nouvel utilisateur
 
     }
-    public ManagerService registerManagerService(ManagerService request) {
-        if (userRepository.existsByEmail(request.getManager().getEmail())) {
-            throw new EmailAlreadyExistsException();
-        }
-
-        if (userRepository.existsByMatricule(request.getManager().getMatricule())) {
-            throw new MatriculeAlreadyExistsException();
-        }
-
-        // Créer un nouvel utilisateur pour le manager
-        User manager = new User();
-        manager.setNom(request.getManager().getNom());
-        manager.setPrenom(request.getManager().getPrenom());
-        manager.setNumtel(request.getManager().getNumtel());
-        manager.setMatricule(request.getManager().getMatricule());
-        manager.setRole(Role.ManagerRh);
-        manager.setEmail(request.getManager().getEmail());
-        manager.setPassword(passwordEncoder.encode("SopraHR2024"));
-        manager.setDate(LocalDateTime.now());
-        manager.setActivated(true);
-        manager.setGender(request.getManager().getGender());
-
-
-
-        // Enregistrer le manager dans la base de données
-        User registeredManager = userRepository.save(manager);
-
-        // Créer un nouveau ManagerService avec les informations du manager et les informations spécifiques au ManagerService
-        ManagerService managerService = new ManagerService();
-        managerService.setManager(registeredManager);
-        managerService.setDepartment(request.getDepartment());
-        managerService.setPoste(request.getPoste());
-        managerService.setBio(request.getBio());
-        managerService.setDateEntree(request.getDateEntree());
-        managerService.setCompetences(request.getCompetences());
-
-        // Enregistrer le ManagerService dans la base de données
-        return managerServiceRepository.save(managerService);
-    }
 
     @Override
 
@@ -200,16 +162,7 @@ public class UserService implements IUserService{
         return userRepository.findAll();
     }
 
-    public List<User> getFormateursManagersCollaborateurs(List<User> users) {
-        List<Role> rolesToInclude = new ArrayList<>();
-        rolesToInclude.add(Role.Formateur);
-        rolesToInclude.add(Role.ManagerService);
-        rolesToInclude.add(Role.Collaborateur);
 
-        return users.stream()
-                .filter(user -> rolesToInclude.contains(user.getRole()))
-                .collect(Collectors.toList());
-    }
     @Override
 
     public void updateStatus(Long id, boolean newValue) {

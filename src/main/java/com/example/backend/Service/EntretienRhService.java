@@ -121,9 +121,8 @@ private MailConfig emailService ;
     public List<EntretienRh> getEntretiensByPoste(Long postId) {
         return entretienRhRepository.findByPosteId(postId);
     }
-    public Optional<EntretienRh> getEntretienByCandidatureId(Long candidatureId) {
-        return entretienRhRepository.findByCandidatureId(candidatureId);
-    }
+
+
     public void deleteEntretien(Long id) {
         entretienRhRepository.deleteById(id);
     }

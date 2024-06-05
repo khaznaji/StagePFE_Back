@@ -36,22 +36,7 @@ public class PosteService implements IPosteService{
         return poste;
     }
 
-    public Long getUserIdForCollaborateur(Long collaborateurId) {
-        Collaborateur collaborateur = collaborateurRepository.findById(collaborateurId)
-                .orElseThrow(() -> new EntityNotFoundException("Collaborateur non trouvé avec l'ID : " + collaborateurId));
 
-        // Retourne l'ID de l'utilisateur associé au collaborateur
-        return collaborateur.getCollaborateur().getId();
-    }
-
-    public Poste getPosteByCandidatureId(Long candidatureId) {
-        Candidature candidature = candidatureRepository.findById(candidatureId).orElse(null);
-        if (candidature != null) {
-            return candidature.getPoste();
-        } else {
-            return null;
-        }
-    }
 
 
 }

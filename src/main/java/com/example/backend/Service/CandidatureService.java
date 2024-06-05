@@ -22,7 +22,12 @@ public class CandidatureService {
     private final CandidatureRepository candidatureRepository;
     @Autowired
     private  CollaborateurRepository collaborateurRepository;
-
+    @Autowired
+    PosteRepository posteRepository;
+    @Autowired
+    ManagerServiceRepository managerServiceRepository;
+    @Autowired
+    MailConfig emailService ;
 
     @Autowired
     public CandidatureService(CandidatureRepository candidatureRepository) {
@@ -39,18 +44,14 @@ public class CandidatureService {
             return candidatureRepository.save(candidature);
         }
         // Gérer le cas où la candidature n'est pas trouvée
-        return null;
-    }
-    public List<Candidature> getAllCandidatures() {
-        return candidatureRepository.findAll();
+        throw new CandidatureNotFoundException("Candidature not found for collaborateurId: " + collaborateurId + " and posteId: " + posteId);
     }
     public List<Candidature> getCandidaturesByPost(Long postId) {
         return candidatureRepository.findByPosteId(postId);
     }
 
-    public List<Candidature> getCandidaturesByPoste(Long posteId) {
-        return candidatureRepository.findByPosteId(posteId);
-    }
+
+
 public void updateCandidaturesToEnAttente(List<Long> candidatureIds) {
       for (Long candidatureId : candidatureIds) {
           Candidature candidature = candidatureRepository.findById(candidatureId)
@@ -60,39 +61,70 @@ public void updateCandidaturesToEnAttente(List<Long> candidatureIds) {
           candidatureRepository.save(candidature);
       }
   }
-  @Autowired
-    PosteRepository posteRepository;
-    @Autowired
-    ManagerServiceRepository managerServiceRepository;
-    @Autowired
-    MailConfig emailService ;
-    @Transactional
-    public void accepterCandidatures(List<Long> candidatureIds) {
-        for (Long candidatureId : candidatureIds) {
-            Candidature candidature = candidatureRepository.findById(candidatureId)
-                    .orElseThrow(() -> new IllegalArgumentException("Candidature non trouvée avec l'ID : " + candidatureId));
 
-            // Mettre à jour l'état de la candidature à "Accepté"
-            candidature.setEtat(EtatPostulation.ACCEPTEE);
 
-            Poste poste = candidature.getPoste();
-            if (poste != null) {
-                Collaborateur collaborateur = candidature.getCollaborateur();
-                if (collaborateur != null) {
-                    // Mettre à jour le titre du poste du collaborateur avec le titre du poste de la candidature
-                    collaborateur.setPoste(poste.getTitre());
+ /* @Transactional
+  public void accepterCandidatures(List<Long> candidatureIds) {
+      for (Long candidatureId : candidatureIds) {
+          Candidature candidature = candidatureRepository.findById(candidatureId)
+                  .orElseThrow(() -> new IllegalArgumentException("Candidature non trouvée avec l'ID : " + candidatureId));
 
-                    // Mettre à jour le managerService_id du collaborateur avec le managerService_id du poste
-                    collaborateur.setManagerService(poste.getManagerService());
+          candidature.setEtat(EtatPostulation.ACCEPTEE);
 
-                    collaborateurRepository.save(collaborateur);
-                    emailService.sendAcceptanceEmail(collaborateur.getCollaborateur().getEmail() , poste.getTitre());
+          Poste poste = candidature.getPoste();
+          if (poste != null) {
+              Collaborateur collaborateur = candidature.getCollaborateur();
+              if (collaborateur != null) {
+                  collaborateur.setPoste(poste.getTitre());
+                  collaborateur.setManagerService(poste.getManagerService());
+                  collaborateurRepository.save(collaborateur);
 
-                }
-            }
-            candidatureRepository.save(candidature);
+                  User collaborateurUser = collaborateur.getCollaborateur();
+                  if (collaborateurUser != null) {
+                      emailService.sendAcceptanceEmail(collaborateurUser.getEmail(), poste.getTitre());
+                  } else {
+                      throw new IllegalArgumentException("Collaborateur's user is null for candidature ID: " + candidatureId);
+                  }
+              } else {
+                  throw new IllegalArgumentException("Collaborateur is null for candidature ID: " + candidatureId);
+              }
+          } else {
+              throw new IllegalArgumentException("Poste is null for candidature ID: " + candidatureId);
+          }
+          candidatureRepository.save(candidature);
+      }
+  }*/
+ @Transactional
+ public void accepterCandidatures(List<Long> candidatureIds) {
+     for (Long candidatureId : candidatureIds) {
+         Candidature candidature = candidatureRepository.findById(candidatureId)
+                 .orElseThrow(() -> new CandidatureNotFoundException("Candidature not found with id: " + candidatureId));
 
-        }
-    }
+         candidature.setEtat(EtatPostulation.ACCEPTEE);
+
+         Poste poste = candidature.getPoste();
+         if (poste != null) {
+             Collaborateur collaborateur = candidature.getCollaborateur();
+             if (collaborateur != null) {
+                 collaborateur.setPoste(poste.getTitre());
+                 collaborateur.setManagerService(poste.getManagerService());
+                 collaborateurRepository.save(collaborateur);
+                 User collaborateurUser = collaborateur.getCollaborateur();
+                 if (collaborateurUser != null) {
+                     emailService.sendAcceptanceEmail(collaborateurUser.getEmail(), poste.getTitre());
+                 } else {
+                     throw new IllegalArgumentException("Collaborateur's user is null for candidature ID: " + candidatureId);
+                 }
+             } else {
+                 throw new IllegalArgumentException("Collaborateur is null for candidature ID: " + candidatureId);
+             }
+         } else {
+             throw new IllegalArgumentException("Poste is null for candidature ID: " + candidatureId);
+         }
+         candidatureRepository.save(candidature);
+     }
+ }
+
+
 
 }

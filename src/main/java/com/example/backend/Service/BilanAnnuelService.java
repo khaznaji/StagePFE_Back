@@ -39,6 +39,7 @@ public class BilanAnnuelService {
         // Imprimer un message de confirmation après avoir envoyé le BilanAnnuel
         System.out.println("Bilan annuel envoyé avec succès à tous les Collaborateur.");
     }
+
     public BilanAnnuel mettreAJourBilanAnnuel(Long bilanAnnuelId, BilanAnnuel bilanAnnuelMiseAJour) {
         BilanAnnuel bilanAnnuelExistant = bilanAnnuelRepository.findById(bilanAnnuelId)
                 .orElseThrow(() -> new EntityNotFoundException("BilanAnnuel non trouvé avec l'ID : " + bilanAnnuelId));

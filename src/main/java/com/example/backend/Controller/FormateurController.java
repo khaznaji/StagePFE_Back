@@ -1,10 +1,7 @@
 package com.example.backend.Controller;
 
 import com.example.backend.Configuration.MailConfig;
-import com.example.backend.Entity.Formateur;
-import com.example.backend.Entity.Gender;
-import com.example.backend.Entity.Role;
-import com.example.backend.Entity.User;
+import com.example.backend.Entity.*;
 import com.example.backend.Repository.*;
 import com.example.backend.Security.verificationCode.CodeVerification;
 import com.example.backend.Security.verificationCode.CodeVerificationServiceImpl;
@@ -15,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +22,11 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Controller
 @RestController
 @CrossOrigin(origins = "*")
@@ -92,4 +95,37 @@ public class FormateurController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+    @GetMapping("/formateur/info")
+    public Map<String, Object> getFormateurInfo(@AuthenticationPrincipal UserDetails userDetails) {
+        // Récupérez le Collaborateur connecté
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        Map<String, Object> userInf = new HashMap<>();
+        userInf.put("id", user.getId());
+
+        Map<String, Object> userInfo = new HashMap<>();
+        Formateur formateur = user.getFormateur();
+        userInfo.put("nom", formateur.getFormateur().getNom());
+        userInfo.put("prenom", formateur.getFormateur().getPrenom());
+        userInfo.put("dateEntree", formateur.getDateEntree());
+        userInfo.put("departement", formateur.getSpecialite());
+        userInfo.put("image", formateur.getFormateur().getImage());
+        userInfo.put("formationCrees", formateur.getFormation().stream()
+                .map(poste -> {
+                    Map<String, Object> posteMap = new HashMap<>();
+                    posteMap.put("id", poste.getId());
+                    posteMap.put("titre", poste.getTitle());
+                    posteMap.put("imagePoste", poste.getImage());
+                    posteMap.put("chapitre", poste.getChapitre());
+                    posteMap.put("duree", poste.getDuree());
+                    posteMap.put("departement", poste.getDepartment());
+
+                    return posteMap;
+                })
+                .collect(Collectors.toList()));
+        userInfo.put("nombreformationCrees", formateur.getFormation().size());
+
+        return userInfo;
+    }
+
 }
