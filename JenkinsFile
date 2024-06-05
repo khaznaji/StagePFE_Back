@@ -10,7 +10,7 @@ stages {
 
     stage("MAVEN BUILD") {
       steps {
-       dir('gestion-station-ski') {
+       dir('StagePFE_Back') {
         sh 'mvn clean install -Dmaven.test.skip=true'
       }
     }
