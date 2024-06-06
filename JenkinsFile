@@ -55,7 +55,7 @@ stage('MVN NEXUS')
  stage("BUILD DOCKER IMAGE") {
              steps {
 
-               sh 'docker build -t khaznaji/oumaymalynakhaznaji-5sae4-g1-gestion-station-ski:latest .'
+               sh 'docker build -t khaznaji/stagepfe:latest .'
 
              }
            }/*
