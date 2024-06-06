@@ -11,9 +11,9 @@ stages {
     stage("MAVEN BUILD") {
       steps {
         sh 'mvn clean install -Dmaven.test.skip=true'
+    }
+    }
 
-    }
-    }
    stage("MOCKITO") {
           steps {
         sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
@@ -36,11 +36,13 @@ stages {
 
           }
         }
+
     stage("SONARQUBE") {
       steps {
        sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
       }
     }
+
 stage('MVN NEXUS')
                   {
                   steps {

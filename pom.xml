@@ -125,12 +125,7 @@
             <url>http://localhost:8081/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
-    <repositories>
-        <repository>
-            <id>custom-repo</id>
-            <url>http://hra-nexus.ptx.fr.sopra/content/groups/all-repositories</url>
-        </repository>
-    </repositories>
+
     <build>
         <plugins>
             <plugin>
