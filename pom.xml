@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.example</groupId>
     <artifactId>Backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0</version>
     <name>Backend</name>
     <description>Backend</description>
     <properties>
@@ -125,7 +125,12 @@
             <url>http://localhost:8081/repository/maven-releases/</url>
         </repository>
     </distributionManagement>
-
+    <repositories>
+        <repository>
+            <id>custom-repo</id>
+            <url>http://hra-nexus.ptx.fr.sopra/content/groups/all-repositories</url>
+        </repository>
+    </repositories>
     <build>
         <plugins>
             <plugin>
