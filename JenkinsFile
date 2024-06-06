@@ -35,13 +35,12 @@ stages {
                     sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
 
           }
-        }/*
+        }
     stage("SONARQUBE") {
       steps {
-      dir('gestion-station-ski') {
        sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
-      }}
-    }*/
+      }
+    }
 /*stage('MVN NEXUS')
                   {
                   steps {
