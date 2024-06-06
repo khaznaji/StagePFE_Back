@@ -15,7 +15,7 @@ stages {
     }
     }
 
-  /* stage("MOCKITO") {
+   stage("MOCKITO") {
           steps {
         sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
                     sh "mvn test -Dtest=com.example.backend.services.CandidatureServiceImplMock"
@@ -50,7 +50,7 @@ stage('MVN NEXUS')
 
                   sh 'mvn  deploy -DskipTests  '
 
-                  }}*/
+                  }}
 
 
  stage("BUILD DOCKER IMAGE") {
@@ -59,26 +59,23 @@ stage('MVN NEXUS')
                sh 'docker build -t khaznaji/stagepfe:latest .'
 
              }
-           }/*
+           }
        stage('docker push'){
                         steps{
-                              dir('gestion-station-ski') {
                             script{
                                 sh 'docker login -u "khaznaji" -p "191JFT2725" docker.io'
-                                sh 'docker push khaznaji/oumaymalynakhaznaji-5sae4-g1-gestion-station-ski:latest'
-                                sh 'docker push khaznaji/test:latest'
+                                sh 'docker push khaznaji/stagepfe:latest'
 
-                            }
+
                         }
                     }}
 
                stage('docker compose') {
                    steps{
-                         dir('gestion-station-ski') {
                        sh 'docker compose down --rmi all'
                        sh 'docker compose up -d'
-                   }}
-               }*/
+                   }
+               }
 
 
 }}
