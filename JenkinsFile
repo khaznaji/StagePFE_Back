@@ -72,7 +72,7 @@ stage('MVN NEXUS')
 
                stage('docker compose') {
                    steps{
-                       sh 'docker compose down --rmi all'
+                    /*   sh 'docker compose down --rmi all'*/
                        sh 'docker compose up -d'
                    }
                }

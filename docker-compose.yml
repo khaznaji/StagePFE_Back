@@ -12,7 +12,7 @@ services:
       - test
     volumes:
       - db:/var/lib/mysql
-  gestionstationski:
+  Backend:
     depends_on:
       - mysqldb
     image: khaznaji/stagepfe:latest
