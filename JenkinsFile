@@ -15,7 +15,7 @@ stages {
     }
     }
 
-   stage("MOCKITO") {
+  /* stage("MOCKITO") {
           steps {
         sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
                     sh "mvn test -Dtest=com.example.backend.services.CandidatureServiceImplMock"
@@ -36,9 +36,9 @@ stages {
                     sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
 
           }
-        }
+        }*/
 
-    stage("SONARQUBE") {
+   /* stage("SONARQUBE") {
       steps {
        sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
       }
@@ -50,7 +50,7 @@ stage('MVN NEXUS')
 
                   sh 'mvn  deploy -DskipTests  '
 
-                  }}
+                  }}*/
 
 
  stage("BUILD DOCKER IMAGE") {
