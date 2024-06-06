@@ -41,14 +41,14 @@ stages {
        sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
       }
     }
-/*stage('MVN NEXUS')
+stage('MVN NEXUS')
                   {
                   steps {
                         dir('gestion-station-ski') {
 
                   sh 'mvn  deploy -DskipTests  '
                   }
-                  }}*/
+                  }}
 
 
  /*stage("BUILD DOCKER IMAGE") {
