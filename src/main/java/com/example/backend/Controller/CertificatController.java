@@ -670,11 +670,21 @@ public class CertificatController {
         }
     }
 
-    private void deleteCertificatFile(String pdfFilePath) {
+  /*  private void deleteCertificatFile(String pdfFilePath) {
         File pdfFile = new File(pdfFilePath);
         if (pdfFile.exists() && pdfFile.isFile()) {
             pdfFile.delete();
         }
-    }
+    }*/
+  private void deleteCertificatFile(String pdfFilePath) {
+      File pdfFile = new File(pdfFilePath);
+      if (pdfFile.exists() && pdfFile.isFile()) {
+          boolean deleted = pdfFile.delete();
+          if (!deleted) {
+              System.err.println("La suppression du fichier a échoué : " + pdfFilePath);
+          }
+      }
+  }
+
 
 }

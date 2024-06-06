@@ -44,10 +44,9 @@ stages {
 stage('MVN NEXUS')
                   {
                   steps {
-                        dir('gestion-station-ski') {
 
                   sh 'mvn  deploy -DskipTests  '
-                  }
+
                   }}
 
 
