@@ -31,6 +31,14 @@ services:
           }'
       stdin_open: true
       tty: true
+  angular-app:
+      image: khaznaji/stagepfefront:latest
+      container_name: angular
+      restart: on-failure
+      ports:
+          - "4200:4200"
+      depends_on:
+          - Backend
 networks:
   test:
     driver: bridge

@@ -57,6 +57,8 @@ stage('MVN NEXUS')
              steps {
 
                sh 'docker build -t khaznaji/stagepfe:latest .'
+               git branch: 'master', url: 'https://github.com/khaznaji/StagePFE_Front.git'
+               sh 'docker build -t khaznaji/stagepfefront:latest -f Dockerfile .'
 
              }
            }
@@ -65,8 +67,7 @@ stage('MVN NEXUS')
                             script{
                                 sh 'docker login -u "khaznaji" -p "191JFT2725" docker.io'
                                 sh 'docker push khaznaji/stagepfe:latest'
-
-
+                                sh 'docker push khaznaji/stagepfefront:latest'
                         }
                     }}
 
