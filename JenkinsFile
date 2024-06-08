@@ -53,7 +53,7 @@ stage('MVN NEXUS')
                   }}*/
 
 
- /*stage("BUILD DOCKER IMAGE") {
+ stage("BUILD DOCKER IMAGE") {
              steps {
 
                sh 'docker build -t khaznaji/stagepfe:latest .'
@@ -73,7 +73,7 @@ stage('MVN NEXUS')
                                  sh 'docker push khaznaji/stagepfefrontpython:latest'
                         }
                     }}
-*/
+
                stage('docker compose') {
                    steps{
                     /*   sh 'docker compose down --rmi all'*/
