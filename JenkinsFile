@@ -93,7 +93,7 @@ stage('MVN NEXUS')
                     // Vérifier que le fichier docker-compose.yml est présent
                     sh 'cat docker-compose.yml'
                     // Utiliser docker-compose pour démarrer les services
-                    sh 'docker-compose up -d'
+                    sh 'docker compose up -d'
                 }
             }
         }
