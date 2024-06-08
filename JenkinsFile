@@ -1,102 +1,108 @@
-pipeline {
-  agent any;
-stages {
-    stage("GIT") {
-      steps {
-        sh 'git pull origin master'
-      }
-    }
-
-
-    stage("MAVEN BUILD") {
-      steps {
-        sh 'mvn clean install -Dmaven.test.skip=true'
-    }
-    }
-
-
-  /* stage("MOCKITO") {
+    pipeline {
+      agent any;
+    stages {
+        stage("GIT") {
           steps {
-        sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
-                    sh "mvn test -Dtest=com.example.backend.services.CandidatureServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.CertificatsServiceImpMock"
-                    sh "mvn test -Dtest=com.example.backend.services.CollaborateurServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.CompetenceServiceImpMock"
-                    sh "mvn test -Dtest=com.example.backend.services.EntretienRhServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.EntretienServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.EvaluationServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.FormateurServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.FormationServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.GroupServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.ManagerServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.PosteServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.QuestionServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.QuizzServiceImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.SessionFormationImplMock"
-                    sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
-
+            sh 'git pull origin master'
           }
-        }*/
-
-   /* stage("SONARQUBE") {
-      steps {
-       sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
-      }
-    }
-
-stage('MVN NEXUS')
-                  {
-                  steps {
-
-                  sh 'mvn  deploy -DskipTests  '
-
-                  }}*/
-
- stage("BUILD DOCKER IMAGE") {
-            steps {
-                script {
-                    // Stocker le répertoire actuel
-                    env.ORIGINAL_DIR = sh(script: 'pwd', returnStdout: true).trim()
-
-                    // Construire les images Docker
-                    sh 'docker build -t khaznaji/stagepfe:latest .'
-                    sh 'git clone https://github.com/khaznaji/StagePFE_Front.git'
-                    dir('StagePFE_Front') {
-                        sh 'docker build -t khaznaji/stagepfefront:latest -f Dockerfile .'
-                    }
-                    sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
-                    dir('Cv-Matching') {
-                        sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
-                    }
-
-                    // Revenir au répertoire initial
-                    sh "cd ${env.ORIGINAL_DIR}"
-                }
-            }
-        }
-       stage('docker push'){
-                        steps{
-                            script{
-                                sh 'docker login -u "khaznaji" -p "191JFT2725" docker.io'
-                                sh 'docker push khaznaji/stagepfe:latest'
-                                sh 'docker push khaznaji/stagepfefront:latest'
-                                 sh 'docker push khaznaji/stagepfefrontpython:latest'
-                        }
-                    }}
-  stage('docker compose') {
-            steps {
-                script {
-                    // Afficher le répertoire de travail actuel
-                    sh 'pwd'
-                    // Afficher le contenu du répertoire courant
-                    sh 'ls -l'
-                    // Vérifier que le fichier docker-compose.yml est présent
-                    sh 'cat docker-compose.yml'
-                    // Utiliser docker-compose pour démarrer les services
-                    sh 'docker compose up -d'
-                }
-            }
         }
 
 
-}}
+        stage("MAVEN BUILD") {
+          steps {
+            sh 'mvn clean install -Dmaven.test.skip=true'
+        }
+        }
+
+
+      /* stage("MOCKITO") {
+              steps {
+            sh "mvn test -Dtest=com.example.backend.services.BilanAnnuelServiceImpMock"
+                        sh "mvn test -Dtest=com.example.backend.services.CandidatureServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.CertificatsServiceImpMock"
+                        sh "mvn test -Dtest=com.example.backend.services.CollaborateurServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.CompetenceServiceImpMock"
+                        sh "mvn test -Dtest=com.example.backend.services.EntretienRhServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.EntretienServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.EvaluationServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.FormateurServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.FormationServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.GroupServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.ManagerServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.PosteServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.QuestionServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.QuizzServiceImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.SessionFormationImplMock"
+                        sh "mvn test -Dtest=com.example.backend.services.UserServiceImplMock"
+
+              }
+            }*/
+
+       /* stage("SONARQUBE") {
+          steps {
+           sh "mvn sonar:sonar -Dsonar.login=admin -Dsonar.password=azerty123"
+          }
+        }
+
+    stage('MVN NEXUS')
+                      {
+                      steps {
+
+                      sh 'mvn  deploy -DskipTests  '
+
+                      }}*/
+
+   stage("BUILD DOCKER IMAGE") {
+              steps {
+                  script {
+                      // Store the current directory
+                      env.ORIGINAL_DIR = sh(script: 'pwd', returnStdout: true).trim()
+
+                      // Build the Docker image for the main project
+                      sh 'docker build -t khaznaji/stagepfe:latest .'
+
+                      // Clone StagePFE_Front repository
+                      sh 'rm -rf StagePFE_Front || true'
+                      sh 'git clone https://github.com/khaznaji/StagePFE_Front.git'
+                      dir('StagePFE_Front') {
+                          sh 'docker build -t khaznaji/stagepfefront:latest -f Dockerfile .'
+                      }
+
+                      // Clone Cv-Matching repository
+                      sh 'rm -rf Cv-Matching || true'
+                      sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
+                      dir('Cv-Matching') {
+                          sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
+                      }
+
+                      // Return to the original directory
+                      sh "cd ${env.ORIGINAL_DIR}"
+                  }
+              }
+          }
+           stage('docker push'){
+                            steps{
+                                script{
+                                    sh 'docker login -u "khaznaji" -p "191JFT2725" docker.io'
+                                    sh 'docker push khaznaji/stagepfe:latest'
+                                    sh 'docker push khaznaji/stagepfefront:latest'
+                                     sh 'docker push khaznaji/stagepfefrontpython:latest'
+                            }
+                        }}
+      stage('docker compose') {
+                steps {
+                    script {
+                        // Afficher le répertoire de travail actuel
+                        sh 'pwd'
+                        // Afficher le contenu du répertoire courant
+                        sh 'ls -l'
+                        // Vérifier que le fichier docker-compose.yml est présent
+                        sh 'cat docker-compose.yml'
+                        // Utiliser docker-compose pour démarrer les services
+                        sh 'docker compose up -d'
+                    }
+                }
+            }
+
+
+    }}
