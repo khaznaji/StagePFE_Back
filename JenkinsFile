@@ -60,10 +60,12 @@ stage('MVN NEXUS')
 
                     // Construire les images Docker
                     sh 'docker build -t khaznaji/stagepfe:latest .'
-                    sh 'git clone https://github.com/khaznaji/StagePFE_Front.git'
-                        sh 'docker build -t khaznaji/stagepfefront:latest -f Dockerfile .'
+                    git branch: 'master', url: 'git clone https://github.com/khaznaji/StagePFE_Front.git'
 
-                    sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
+
+                        sh 'docker build -t khaznaji/stagepfefront:latest -f Dockerfile .'
+                    git branch: 'master', url: 'git clone https://github.com/khaznaji/Cv-Matching.git'
+
                         sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
 
 
