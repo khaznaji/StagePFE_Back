@@ -112,7 +112,7 @@ public class CollaborateurController {
         if (resume != null) {
             try {
                 // Directory where PDF files will be stored
-                String uploadDir = "C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\Resume\\";
+                String uploadDir = "C:\\Users\\DELL\\Desktop\\pfe\\StagePFE_Front\\src\\assets\\Resume\\";
 
                 // Create unique file name for the PDF
                 String fileName = UUID.randomUUID().toString() + "_" + resume.getOriginalFilename();
@@ -196,7 +196,7 @@ public class CollaborateurController {
         if (resume != null) {
             try {
                 // Directory where PDF files will be stored
-                String uploadDir = "C:\\Users\\olkhaznaji\\Desktop\\StagePFE\\Frontend\\src\\assets\\Resume\\";
+                String uploadDir = "C:\\Users\\DELL\\Desktop\\pfe\\StagePFE_Front\\src\\assets\\Resume\\";
 
                 // Create unique file name for the PDF
                 String fileName = UUID.randomUUID().toString() + "_" + resume.getOriginalFilename();
