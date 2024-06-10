@@ -57,14 +57,14 @@
                   script {
                       // Store the current directory
                       env.ORIGINAL_DIR = sh(script: 'pwd', returnStdout: true).trim()
-
-                      // Build the Docker image for the main project
-                      sh 'docker build -t khaznaji/stagepfe:latest .'
-  sh 'rm -rf Cv-Matching || true'
+sh 'rm -rf Cv-Matching || true'
                       sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
                       dir('Cv-Matching') {
                           sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
                       }
+                      // Build the Docker image for the main project
+                      sh 'docker build -t khaznaji/stagepfe:latest .'
+
                       // Clone StagePFE_Front repository
                       sh 'rm -rf StagePFE_Front || true'
                       sh 'git clone https://github.com/khaznaji/StagePFE_Front.git'
