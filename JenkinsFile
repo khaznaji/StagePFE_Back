@@ -57,7 +57,7 @@
                   script {
                       // Store the current directory
                       env.ORIGINAL_DIR = sh(script: 'pwd', returnStdout: true).trim()
-     git branch: 'main', url: 'https://github.com/khaznaji/Cv-Matching.git'
+     git branch: 'master', url: 'https://github.com/khaznaji/Cv-Matching.git'
      sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
 
 
