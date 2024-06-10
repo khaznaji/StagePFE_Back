@@ -60,7 +60,11 @@
 
                       // Build the Docker image for the main project
                       sh 'docker build -t khaznaji/stagepfe:latest .'
-
+  sh 'rm -rf Cv-Matching || true'
+                      sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
+                      dir('Cv-Matching') {
+                          sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
+                      }
                       // Clone StagePFE_Front repository
                       sh 'rm -rf StagePFE_Front || true'
                       sh 'git clone https://github.com/khaznaji/StagePFE_Front.git'
@@ -68,12 +72,6 @@
                           sh 'docker build -t khaznaji/stagepfefront:latest -f Dockerfile .'
                       }
 
-                      // Clone Cv-Matching repository
-                      sh 'rm -rf Cv-Matching || true'
-                      sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
-                      dir('Cv-Matching') {
-                          sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
-                      }
 
                       // Return to the original directory
                       sh "cd ${env.ORIGINAL_DIR}"
