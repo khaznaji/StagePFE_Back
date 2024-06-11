@@ -46,7 +46,7 @@ services:
     ports:
       - "5000:5000"
     depends_on:
-      - angular-app
+      - Backend
 networks:
   test:
     driver: bridge
