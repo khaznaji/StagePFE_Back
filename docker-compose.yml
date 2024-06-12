@@ -39,6 +39,8 @@ services:
           - "4200:4200"
       depends_on:
           - Backend
+      volumes:
+        - "C:\\Users\\DELL\\Desktop\\pfe\\StagePFE_Front\\src\\assets:/app/assets"
   python-app:
     image: khaznaji/stagepfefrontpython:latest
     container_name: python

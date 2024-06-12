@@ -173,7 +173,7 @@ public ResponseEntity<Map<String, String>> postulerAuPoste(@PathVariable Long po
 
     try {
         RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:5000/match";
+        String url = "http://192.168.56.2:5000/match";
         Map<String, Long> requestBody = new HashMap<>();
         requestBody.put("collaborateur_id", collaborateur.getId());
         requestBody.put("job_id", postId);
