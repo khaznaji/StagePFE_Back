@@ -52,6 +52,7 @@
 
                       }}*/
 
+
    stage("BUILD DOCKER IMAGE") {
               steps {
                   script {
@@ -60,9 +61,9 @@
   sh 'docker build -t khaznaji/stagepfe:latest .'
                       // Build the Docker image for the main project
 sh 'rm -rf Cv-Matching || true'
+                      sh 'git clone https://github.com/khaznaji/Cv-Matching.git'
 
                       dir('Cv-Matching') {
-                           git branch: 'master', url: 'https://github.com/khaznaji/Cv-Matching.git'
 
                           sh 'docker build -t khaznaji/stagepfefrontpython:latest -f Dockerfile .'
 
